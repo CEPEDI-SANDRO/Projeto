@@ -1,26 +1,68 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Cores da marca */
+  --primary: #FFEB00;
+  --primary-hover: #E6D400;
+  --secondary: #D62828;
+
+  /* Layout */
+  --sidebar: #18181B;
+  --header: #FFEB00;
+
+  /* Backgrounds */
+  --background: #F5F5F5;
+  --card: #FFFFFF;
+
+  /* Textos */
+  --foreground: #1F2937;
+  --muted: #6B7280;
+
+  /* Bordas */
+  --border: #E5E7EB;
+
+  /* Status */
+  --success: #16A34A;
+  --warning: #F59E0B;
+  --danger: #DC2626;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-secondary: var(--secondary);
+
+  --color-sidebar: var(--sidebar);
+  --color-header: var(--header);
+
+  --color-card: var(--card);
+  --color-border: var(--border);
+
+  --color-muted: var(--muted);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+
+  --font-sans: var(--font-roboto);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-roboto), Arial, Helvetica, sans-serif;
 }
