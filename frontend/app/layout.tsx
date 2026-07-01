@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
-import { Roboto } from "next/font/google";
+import type { ReactNode } from "react";
+import { Roboto} from "next/font/google";
 import "./globals.css";
+import {Toaster} from "@/components/ui/sonner";
+
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -18,16 +21,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={`${roboto.variable} font-sans antialiased`}>
         {children}
+        <Toaster richColors position="bottom-right" />
       </body>
     </html>
-  );
+  )
 }
