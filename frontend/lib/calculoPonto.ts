@@ -1,4 +1,4 @@
-import type { RegistroPonto } from "@/types/ponto";
+import type { RegistroPonto, StatusPresenca } from "@/types/ponto";
 
 /**
  * Converte HH:mm para minutos.
@@ -74,4 +74,18 @@ export function calcularAtraso(
     horaParaMinutos(entradaReal) - horaParaMinutos(entradaEsperada);
 
   return atraso > tolerancia ? atraso : 0;
+}
+
+export function calcularStatusPresenca(
+  ponto: Pick<RegistroPonto, "entrada1" | "saida1" | "entrada2" | "saida2">
+): StatusPresenca {
+  const { entrada1, saida1, entrada2, saida2 } = ponto;
+  const temManha = !!entrada1 && !!saida1;
+  const temTarde = !!entrada2 && !!saida2;
+
+  if (!temManha && !temTarde) return "falta";
+  if (temManha && temTarde) return "completo";
+  if (temManha && !temTarde) return "parcial_manha";
+  if (!temManha && temTarde) return "parcial_tarde";
+  return "pendente";
 }

@@ -3,7 +3,7 @@ export const APP_NAME = "Chronos Ponto";
 export const EMPRESA_NOME = "Supermercado Sandro";
 
 export const ROTAS = {
-  dashboard: "/dashboard",
+  dashboard: "/",
   funcionarios: "/funcionarios",
   registros: "/registros",
   relatorios: "/relatorios",
