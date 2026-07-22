@@ -1,45 +1,32 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
+import { toast } from "sonner";
 
-import { ActionButton } from "@/components/common/ActionButton";
 import { ActionMenu } from "@/components/common/ActionMenu";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
-import { DataTable, type DataTableColumn } from "@/components/common/DataTable";
-import { Drawer } from "@/components/common/Drawer";
-import { Modal } from "@/components/common/Modal";
+import {
+  DataTable,
+  type DataTableColumn,
+} from "@/components/common/DataTable";
 import { PageContainer } from "@/components/common/PageContainer";
 import { SearchInput } from "@/components/common/SearchInput";
 import { SectionCard } from "@/components/common/SectionCard";
 import { StatusBadge } from "@/components/common/StatusBadge";
-
 import { PageHeader } from "@/components/layout/PageHeader";
-import { FuncionarioDetalhes } from "@/components/modules/funcionarios/FuncionarioDetalhes";
-import { FuncionarioForm } from "@/components/modules/funcionarios/FuncionarioForm";
 
 import { useFuncionarios } from "@/hooks/useFuncionarios";
-import { toast } from "sonner";
-
-import type { Funcionario, FuncionarioFormData } from "@/types/funcionario";
+import type { Funcionario } from "@/types/funcionario";
 
 export default function FuncionariosPage() {
-  const {
-    funcionarios,
-    adicionarFuncionario,
-    editarFuncionario,
-    excluirFuncionario,
-  } = useFuncionarios();
+  const router = useRouter();
+
+  const { funcionarios, excluirFuncionario } = useFuncionarios();
 
   const [search, setSearch] = useState("");
-
-  const [modalAberto, setModalAberto] = useState(false);
-
-  const [funcionarioSelecionado, setFuncionarioSelecionado] =
-    useState<Funcionario | null>(null);
-
-  const [funcionarioEmEdicao, setFuncionarioEmEdicao] =
-    useState<Funcionario | null>(null);
 
   const [funcionarioParaExcluir, setFuncionarioParaExcluir] =
     useState<Funcionario | null>(null);
@@ -65,65 +52,6 @@ export default function FuncionariosPage() {
         .includes(termo),
     );
   }, [funcionarios, search]);
-
-  function abrirCadastro() {
-    setFuncionarioSelecionado(null);
-    setFuncionarioEmEdicao(null);
-    setModalAberto(true);
-  }
-
-  function abrirEdicao(funcionario: Funcionario) {
-    setFuncionarioSelecionado(null);
-    setFuncionarioEmEdicao(funcionario);
-    setModalAberto(true);
-  }
-
-  function fecharFormulario() {
-    setModalAberto(false);
-    setFuncionarioEmEdicao(null);
-  }
-
-  function abrirDetalhes(funcionario: Funcionario) {
-    setFuncionarioEmEdicao(null);
-    setFuncionarioSelecionado(funcionario);
-  }
-
-  function abrirConfirmacaoExclusao(funcionario: Funcionario) {
-    setFuncionarioSelecionado(null);
-    setFuncionarioParaExcluir(funcionario);
-  }
-
-  function cancelarExclusao() {
-    if (excluindo) {
-      return;
-    }
-
-    setFuncionarioParaExcluir(null);
-  }
-
-  async function salvarFuncionario(data: FuncionarioFormData) {
-    try {
-      if (funcionarioEmEdicao) {
-        await editarFuncionario(funcionarioEmEdicao.id, data);
-
-        toast.success("Funcionário atualizado", {
-          description: "As informações foram atualizadas com sucesso.",
-        });
-      } else {
-        await adicionarFuncionario(data);
-
-        toast.success("Funcionário cadastrado", {
-          description: "O novo funcionário foi adicionado com sucesso.",
-        });
-      }
-
-      fecharFormulario();
-    } catch {
-      toast.error("Não foi possível salvar", {
-        description: "Verifique os dados e tente novamente.",
-      });
-    }
-  }
 
   async function confirmarExclusao() {
     if (!funcionarioParaExcluir) {
@@ -165,7 +93,7 @@ export default function FuncionariosPage() {
 
         return (
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-black">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-black shadow-sm ring-2 ring-white">
               {iniciais}
             </div>
 
@@ -174,7 +102,9 @@ export default function FuncionariosPage() {
                 {funcionario.nome}
               </p>
 
-              <p className="text-xs text-slate-500">ID #{funcionario.id}</p>
+              <p className="text-xs text-slate-500">
+                ID #{funcionario.id}
+              </p>
             </div>
           </div>
         );
@@ -190,24 +120,34 @@ export default function FuncionariosPage() {
     },
     {
       header: "Carga diária",
-      render: (funcionario) => `${funcionario.cargaDiariaHoras}h/dia`,
+      render: (funcionario) =>
+        `${funcionario.cargaDiariaHoras}h/dia`,
     },
     {
       header: "Carga mensal",
-      render: (funcionario) => `${funcionario.cargaMensalHoras}h/mês`,
+      render: (funcionario) =>
+        `${funcionario.cargaMensalHoras}h/mês`,
     },
     {
       header: "Status",
-      render: (funcionario) => <StatusBadge status={funcionario.status} />,
+      render: (funcionario) => (
+        <StatusBadge status={funcionario.status} />
+      ),
     },
     {
       header: "Ações",
       className: "text-right",
       render: (funcionario) => (
         <ActionMenu
-          onView={() => abrirDetalhes(funcionario)}
-          onEdit={() => abrirEdicao(funcionario)}
-          onDelete={() => abrirConfirmacaoExclusao(funcionario)}
+          onView={() =>
+            router.push(`/funcionarios/${funcionario.id}`)
+          }
+          onEdit={() =>
+            router.push(`/funcionarios/${funcionario.id}?editar=true`)
+          }
+          onDelete={() =>
+            setFuncionarioParaExcluir(funcionario)
+          }
         />
       ),
     },
@@ -219,10 +159,13 @@ export default function FuncionariosPage() {
         title="Funcionários"
         description="Gerencie os colaboradores cadastrados no sistema."
         action={
-          <ActionButton onClick={abrirCadastro}>
+          <Link
+            href="/funcionarios/novo"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-black shadow-sm transition hover:bg-primary-hover"
+          >
             <Plus className="h-4 w-4" />
             Novo funcionário
-          </ActionButton>
+          </Link>
         }
       />
 
@@ -245,57 +188,6 @@ export default function FuncionariosPage() {
         />
       </SectionCard>
 
-      <Modal
-        open={modalAberto}
-        title={funcionarioEmEdicao ? "Editar funcionário" : "Novo funcionário"}
-        description={
-          funcionarioEmEdicao
-            ? "Atualize os dados do colaborador selecionado."
-            : "Cadastre um novo colaborador no sistema."
-        }
-        onClose={fecharFormulario}
-      >
-        <FuncionarioForm
-          key={funcionarioEmEdicao?.id ?? "novo"}
-          initialData={funcionarioEmEdicao}
-          onCancel={fecharFormulario}
-          onSubmit={salvarFuncionario}
-        />
-      </Modal>
-
-      <Drawer
-        open={Boolean(funcionarioSelecionado)}
-        title="Detalhes do funcionário"
-        description="Informações cadastrais e profissionais."
-        onClose={() => setFuncionarioSelecionado(null)}
-        footer={
-          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <ActionButton
-              type="button"
-              variant="secondary"
-              onClick={() => setFuncionarioSelecionado(null)}
-            >
-              Fechar
-            </ActionButton>
-
-            <ActionButton
-              type="button"
-              onClick={() => {
-                if (funcionarioSelecionado) {
-                  abrirEdicao(funcionarioSelecionado);
-                }
-              }}
-            >
-              Editar funcionário
-            </ActionButton>
-          </div>
-        }
-      >
-        {funcionarioSelecionado && (
-          <FuncionarioDetalhes funcionario={funcionarioSelecionado} />
-        )}
-      </Drawer>
-
       <ConfirmDialog
         open={Boolean(funcionarioParaExcluir)}
         title="Excluir funcionário"
@@ -307,7 +199,11 @@ export default function FuncionariosPage() {
         confirmLabel="Excluir funcionário"
         cancelLabel="Cancelar"
         loading={excluindo}
-        onCancel={cancelarExclusao}
+        onCancel={() => {
+          if (!excluindo) {
+            setFuncionarioParaExcluir(null);
+          }
+        }}
         onConfirm={confirmarExclusao}
       />
     </PageContainer>
