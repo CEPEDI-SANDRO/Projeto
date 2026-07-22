@@ -11,7 +11,6 @@ import {
   LayoutDashboard,
   LogOut,
   Settings,
-  UserPlus,
   Users,
 } from "lucide-react";
 
