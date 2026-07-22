@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus } from "lucide-react";
+import { Clock3, Plus, SearchX } from "lucide-react";
 
 import { ActionButton } from "@/components/common/ActionButton";
 import { ActionMenu } from "@/components/common/ActionMenu";
@@ -236,8 +236,24 @@ export default function RegistrosPage() {
         <DataTable
           data={registrosFiltrados}
           columns={columns}
-          emptyTitle="Nenhum registro encontrado"
-          emptyDescription="Tente pesquisar por outro funcionário, data ou status."
+          emptyIcon={search ? SearchX : Clock3}
+          emptyVariant={search ? "search" : "default"}
+          emptyTitle={
+            search ? "Nenhum registro encontrado" : "Nenhum registro de ponto"
+          }
+          emptyDescription={
+            search
+              ? "Tente pesquisar por outro funcionário, data ou status."
+              : "Ainda não existem marcações de ponto cadastradas."
+          }
+          emptyAction={
+            !search ? (
+              <ActionButton onClick={abrirCadastro}>
+                <Plus className="h-4 w-4" />
+                Novo registro
+              </ActionButton>
+            ) : undefined
+          }
         />
       </SectionCard>
 

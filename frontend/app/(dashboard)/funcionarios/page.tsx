@@ -5,13 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
+import { SearchX, UserPlus } from "lucide-react";
 
 import { ActionMenu } from "@/components/common/ActionMenu";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/common/DataTable";
+import { DataTable, type DataTableColumn } from "@/components/common/DataTable";
 import { PageContainer } from "@/components/common/PageContainer";
 import { SearchInput } from "@/components/common/SearchInput";
 import { SectionCard } from "@/components/common/SectionCard";
@@ -102,9 +100,7 @@ export default function FuncionariosPage() {
                 {funcionario.nome}
               </p>
 
-              <p className="text-xs text-slate-500">
-                ID #{funcionario.id}
-              </p>
+              <p className="text-xs text-slate-500">ID #{funcionario.id}</p>
             </div>
           </div>
         );
@@ -120,34 +116,26 @@ export default function FuncionariosPage() {
     },
     {
       header: "Carga diária",
-      render: (funcionario) =>
-        `${funcionario.cargaDiariaHoras}h/dia`,
+      render: (funcionario) => `${funcionario.cargaDiariaHoras}h/dia`,
     },
     {
       header: "Carga mensal",
-      render: (funcionario) =>
-        `${funcionario.cargaMensalHoras}h/mês`,
+      render: (funcionario) => `${funcionario.cargaMensalHoras}h/mês`,
     },
     {
       header: "Status",
-      render: (funcionario) => (
-        <StatusBadge status={funcionario.status} />
-      ),
+      render: (funcionario) => <StatusBadge status={funcionario.status} />,
     },
     {
       header: "Ações",
       className: "text-right",
       render: (funcionario) => (
         <ActionMenu
-          onView={() =>
-            router.push(`/funcionarios/${funcionario.id}`)
-          }
+          onView={() => router.push(`/funcionarios/${funcionario.id}`)}
           onEdit={() =>
             router.push(`/funcionarios/${funcionario.id}?editar=true`)
           }
-          onDelete={() =>
-            setFuncionarioParaExcluir(funcionario)
-          }
+          onDelete={() => setFuncionarioParaExcluir(funcionario)}
         />
       ),
     },
@@ -183,8 +171,29 @@ export default function FuncionariosPage() {
         <DataTable
           data={funcionariosFiltrados}
           columns={columns}
-          emptyTitle="Nenhum funcionário encontrado"
-          emptyDescription="Tente pesquisar por outro nome, cargo ou matrícula."
+          emptyIcon={search ? SearchX : UserPlus}
+          emptyVariant={search ? "search" : "default"}
+          emptyTitle={
+            search
+              ? "Nenhum funcionário encontrado"
+              : "Nenhum funcionário cadastrado"
+          }
+          emptyDescription={
+            search
+              ? "Tente pesquisar por outro nome, cargo ou matrícula."
+              : "Cadastre o primeiro funcionário para começar a utilizar o sistema."
+          }
+          emptyAction={
+            !search ? (
+              <Link
+                href="/funcionarios/novo"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-black shadow-sm transition hover:bg-primary-hover"
+              >
+                <UserPlus className="h-4 w-4" />
+                Novo funcionário
+              </Link>
+            ) : undefined
+          }
         />
       </SectionCard>
 

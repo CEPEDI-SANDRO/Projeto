@@ -64,6 +64,49 @@
   --radius-xl: 1.5rem;
 }
 
+.dark {
+  /* Marca */
+  --primary: #F5D000;
+  --primary-hover: #E4C100;
+  --secondary: #E54848;
+  --header: #18181B;
+
+  /* Layout */
+  --background: #0F1115;
+  --foreground: #F8FAFC;
+
+  --card: #181B21;
+  --card-foreground: #F8FAFC;
+
+  --sidebar: #0A0A0B;
+
+  /* Texto */
+  --muted: #94A3B8;
+  --muted-foreground: #94A3B8;
+
+  /* Bordas */
+  --border: #2A2F38;
+  --input: #2A2F38;
+  --ring: #F5D000;
+
+  /* Shadcn */
+  --popover: #181B21;
+  --popover-foreground: #F8FAFC;
+  --primary-foreground: #111827;
+  --secondary-foreground: #FFFFFF;
+  --accent: #252A33;
+  --accent-foreground: #F8FAFC;
+
+  /* Sidebar */
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-primary: #F5D000;
+  --sidebar-primary-foreground: #111827;
+  --sidebar-accent: rgba(255, 255, 255, 0.08);
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: rgba(255, 255, 255, 0.10);
+  --sidebar-ring: #F5D000;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -108,6 +151,12 @@ body {
 body {
   margin: 0;
   font-family: var(--font-roboto), Arial, Helvetica, sans-serif;
+}
+
+body {
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
 }
 
 @layer base {

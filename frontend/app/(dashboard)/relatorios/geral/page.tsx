@@ -11,10 +11,7 @@ import {
 } from "lucide-react";
 
 import { ActionButton } from "@/components/common/ActionButton";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/common/DataTable";
+import { DataTable, type DataTableColumn } from "@/components/common/DataTable";
 import { PageContainer } from "@/components/common/PageContainer";
 import { SectionCard } from "@/components/common/SectionCard";
 import { StatCard } from "@/components/common/StatCard";
@@ -25,10 +22,7 @@ import { StatusPieChart } from "@/components/modules/relatorios/StatusPieChart";
 
 import { useRelatorios } from "@/hooks/useRelatorios";
 import { MESES } from "@/lib/constants";
-import {
-  formatarMesAno,
-  formatarMinutosParaHoras,
-} from "@/lib/formatters";
+import { formatarMesAno, formatarMinutosParaHoras } from "@/lib/formatters";
 
 import type { ResumoFuncionarioGeral } from "@/types/relatorio";
 
@@ -37,11 +31,7 @@ const MES_ATUAL = DATA_ATUAL.getMonth() + 1;
 const ANO_ATUAL = DATA_ATUAL.getFullYear();
 
 export default function RelatorioGeralPage() {
-  const {
-    relatorioGeral,
-    loading,
-    buscarRelatorioGeral,
-  } = useRelatorios();
+  const { relatorioGeral, loading, buscarRelatorioGeral } = useRelatorios();
 
   const [mes, setMes] = useState(MES_ATUAL);
   const [ano, setAno] = useState(ANO_ATUAL);
@@ -91,9 +81,7 @@ export default function RelatorioGeralPage() {
     };
   }, [relatorioGeral]);
 
-  const columns = useMemo<
-    DataTableColumn<ResumoFuncionarioGeral>[]
-  >(
+  const columns = useMemo<DataTableColumn<ResumoFuncionarioGeral>[]>(
     () => [
       {
         header: "Funcionário",
@@ -128,16 +116,12 @@ export default function RelatorioGeralPage() {
       {
         header: "Horas trabalhadas",
         render: (resumo) =>
-          formatarMinutosParaHoras(
-            resumo.totalHorasTrabalhadasMin,
-          ),
+          formatarMinutosParaHoras(resumo.totalHorasTrabalhadasMin),
       },
       {
         header: "Horas extras",
         render: (resumo) =>
-          formatarMinutosParaHoras(
-            resumo.totalHorasExtrasMin,
-          ),
+          formatarMinutosParaHoras(resumo.totalHorasExtrasMin),
       },
       {
         header: "Faltas",
@@ -175,22 +159,15 @@ export default function RelatorioGeralPage() {
         >
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
             <label className="block w-full lg:max-w-xs">
-              <span className="text-sm font-medium text-slate-700">
-                Mês
-              </span>
+              <span className="text-sm font-medium text-slate-700">Mês</span>
 
               <select
                 value={mes}
-                onChange={(event) =>
-                  setMes(Number(event.target.value))
-                }
+                onChange={(event) => setMes(Number(event.target.value))}
                 className={inputClass}
               >
                 {MESES.map((item) => (
-                  <option
-                    key={item.value}
-                    value={item.value}
-                  >
+                  <option key={item.value} value={item.value}>
                     {item.label}
                   </option>
                 ))}
@@ -198,15 +175,11 @@ export default function RelatorioGeralPage() {
             </label>
 
             <label className="block w-full lg:max-w-xs">
-              <span className="text-sm font-medium text-slate-700">
-                Ano
-              </span>
+              <span className="text-sm font-medium text-slate-700">Ano</span>
 
               <select
                 value={ano}
-                onChange={(event) =>
-                  setAno(Number(event.target.value))
-                }
+                onChange={(event) => setAno(Number(event.target.value))}
                 className={inputClass}
               >
                 {Array.from({ length: 5 }, (_, index) => {
@@ -250,8 +223,8 @@ export default function RelatorioGeralPage() {
               </h2>
 
               <p className="mt-1 max-w-md text-sm text-slate-500">
-                Escolha o período desejado e clique em
-                “Gerar relatório” para visualizar os indicadores.
+                Escolha o período desejado e clique em “Gerar relatório” para
+                visualizar os indicadores.
               </p>
             </div>
           </SectionCard>
@@ -271,10 +244,7 @@ export default function RelatorioGeralPage() {
       {relatorioGeral && !loading && (
         <>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <DashboardMotion
-              delay={0.1}
-              className="h-full"
-            >
+            <DashboardMotion delay={0.1} className="h-full">
               <StatCard
                 title="Funcionários"
                 value={relatorioGeral.totalFuncionarios}
@@ -284,10 +254,7 @@ export default function RelatorioGeralPage() {
               />
             </DashboardMotion>
 
-            <DashboardMotion
-              delay={0.15}
-              className="h-full"
-            >
+            <DashboardMotion delay={0.15} className="h-full">
               <StatCard
                 title="Horas trabalhadas"
                 value={formatarMinutosParaHoras(
@@ -299,10 +266,7 @@ export default function RelatorioGeralPage() {
               />
             </DashboardMotion>
 
-            <DashboardMotion
-              delay={0.2}
-              className="h-full"
-            >
+            <DashboardMotion delay={0.2} className="h-full">
               <StatCard
                 title="Horas extras"
                 value={formatarMinutosParaHoras(
@@ -314,10 +278,7 @@ export default function RelatorioGeralPage() {
               />
             </DashboardMotion>
 
-            <DashboardMotion
-              delay={0.25}
-              className="h-full"
-            >
+            <DashboardMotion delay={0.25} className="h-full">
               <StatCard
                 title="Faltas"
                 value={relatorioGeral.totalFaltas}
@@ -334,9 +295,7 @@ export default function RelatorioGeralPage() {
                 title="Horas por funcionário"
                 description="Comparação da carga horária acumulada no período."
               >
-                <HorasPorFuncionarioChart
-                  data={relatorioGeral.resumos}
-                />
+                <HorasPorFuncionarioChart data={relatorioGeral.resumos} />
               </SectionCard>
 
               <SectionCard
@@ -361,18 +320,17 @@ export default function RelatorioGeralPage() {
                 <div className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium capitalize text-slate-600">
                   <FileText className="h-4 w-4" />
 
-                  {formatarMesAno(
-                    relatorioGeral.mes,
-                    relatorioGeral.ano,
-                  )}
+                  {formatarMesAno(relatorioGeral.mes, relatorioGeral.ano)}
                 </div>
               }
             >
               <DataTable
                 data={relatorioGeral.resumos}
                 columns={columns}
-                emptyTitle="Nenhum dado encontrado"
-                emptyDescription="Não existem registros para o período selecionado."
+                emptyIcon={FileBarChart2}
+                emptyTitle="Nenhum dado no período"
+                emptyDescription="Não foram encontrados registros para o mês e ano selecionados."
+                emptyVariant="warning"
               />
             </SectionCard>
           </DashboardMotion>

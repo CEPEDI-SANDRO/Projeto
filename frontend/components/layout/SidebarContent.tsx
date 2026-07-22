@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -15,11 +16,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import {
-  APP_NAME,
-  EMPRESA_NOME,
-  ROTAS,
-} from "@/lib/constants";
+import { APP_NAME, EMPRESA_NOME, ROTAS } from "@/lib/constants";
 
 interface SidebarContentProps {
   onNavigate?: () => void;
@@ -73,22 +70,19 @@ const navItems = [
   },
 ];
 
-export function SidebarContent({
-  onNavigate,
-}: SidebarContentProps) {
+export function SidebarContent({ onNavigate }: SidebarContentProps) {
   const pathname = usePathname();
+
+  const router = useRouter();
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
 
-    return (
-      pathname === href ||
-      pathname.startsWith(`${href}/`)
-    );
+    return pathname === href || pathname.startsWith(`${href}/`);
   };
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       <div className="flex h-16 items-center gap-3 border-b border-white/10 px-5 pr-14">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-sm">
           <Image
@@ -101,17 +95,13 @@ export function SidebarContent({
         </div>
 
         <div className="min-w-0">
-          <p className="truncate text-sm font-bold">
-            {APP_NAME}
-          </p>
+          <p className="truncate text-sm font-bold">{APP_NAME}</p>
 
-          <p className="truncate text-xs text-neutral-500">
-            {EMPRESA_NOME}
-          </p>
+          <p className="truncate text-xs text-neutral-500">{EMPRESA_NOME}</p>
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 pt-7">
+      <nav className="min-h-0 flex-1 overflow-y-auto px-3 pt-7">
         <p className="mb-3 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-500">
           Menu principal
         </p>
@@ -120,8 +110,7 @@ export function SidebarContent({
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
-            const hasChildren =
-              Boolean(item.children?.length);
+            const hasChildren = Boolean(item.children?.length);
 
             return (
               <div key={item.href}>
@@ -141,9 +130,7 @@ export function SidebarContent({
 
                   <Icon className="h-[18px] w-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110" />
 
-                  <span className="flex-1 truncate">
-                    {item.label}
-                  </span>
+                  <span className="flex-1 truncate">{item.label}</span>
 
                   {hasChildren && (
                     <ChevronDown
@@ -167,8 +154,7 @@ export function SidebarContent({
                     <div className="overflow-hidden">
                       <div className="ml-7 mt-1 space-y-1 border-l border-white/10 pl-3">
                         {item.children?.map((child) => {
-                          const childActive =
-                            pathname === child.href;
+                          const childActive = pathname === child.href;
 
                           return (
                             <Link
@@ -196,26 +182,26 @@ export function SidebarContent({
         </div>
       </nav>
 
-      <div className="border-t border-white/10 p-4">
+      <div className="shrink-0 border-t border-white/10 p-4">
         <div className="mb-3 flex items-center gap-3 rounded-2xl bg-white/[0.04] p-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F5D000] text-sm font-bold text-black">
             A
           </div>
 
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold">
-              Admin
-            </p>
+            <p className="truncate text-sm font-semibold">Admin</p>
 
-            <p className="truncate text-xs text-neutral-500">
-              Administrador
-            </p>
+            <p className="truncate text-xs text-neutral-500">Administrador</p>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
+            onClick={() => {
+              router.push("/configuracoes");
+              onNavigate?.();
+            }}
             className="flex items-center justify-center gap-2 rounded-xl bg-white/[0.04] px-3 py-2 text-xs text-neutral-400 transition hover:bg-white/[0.08] hover:text-white"
           >
             <Settings className="h-4 w-4" />
@@ -224,6 +210,7 @@ export function SidebarContent({
 
           <button
             type="button"
+            onClick={() => router.push("/login")}
             className="flex items-center justify-center gap-2 rounded-xl bg-white/[0.04] px-3 py-2 text-xs text-neutral-400 transition hover:bg-red-500/10 hover:text-red-400"
           >
             <LogOut className="h-4 w-4" />

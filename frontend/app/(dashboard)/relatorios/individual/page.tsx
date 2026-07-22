@@ -7,13 +7,11 @@ import {
   FileText,
   TriangleAlert,
   UserRoundSearch,
+  CalendarX2
 } from "lucide-react";
 
 import { ActionButton } from "@/components/common/ActionButton";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/common/DataTable";
+import { DataTable, type DataTableColumn } from "@/components/common/DataTable";
 import { EmptyState } from "@/components/common/EmptyState";
 import { PageContainer } from "@/components/common/PageContainer";
 import { SectionCard } from "@/components/common/SectionCard";
@@ -39,11 +37,8 @@ const MES_ATUAL = DATA_ATUAL.getMonth() + 1;
 const ANO_ATUAL = DATA_ATUAL.getFullYear();
 
 export default function RelatorioIndividualPage() {
-  const {
-    relatorioIndividual,
-    loading,
-    buscarRelatorioIndividual,
-  } = useRelatorios();
+  const { relatorioIndividual, loading, buscarRelatorioIndividual } =
+    useRelatorios();
 
   const [funcionarioId, setFuncionarioId] = useState(0);
   const [mes, setMes] = useState(MES_ATUAL);
@@ -78,14 +73,11 @@ export default function RelatorioIndividualPage() {
       },
       {
         header: "Horas extras",
-        render: (registro) =>
-          formatarMinutosParaHoras(registro.horasExtrasMin),
+        render: (registro) => formatarMinutosParaHoras(registro.horasExtrasMin),
       },
       {
         header: "Status",
-        render: (registro) => (
-          <StatusBadge status={registro.status} />
-        ),
+        render: (registro) => <StatusBadge status={registro.status} />,
       },
     ],
     [],
@@ -96,11 +88,7 @@ export default function RelatorioIndividualPage() {
       return;
     }
 
-    await buscarRelatorioIndividual(
-      funcionarioId,
-      mes,
-      ano,
-    );
+    await buscarRelatorioIndividual(funcionarioId, mes, ano);
   }
 
   return (
@@ -130,15 +118,10 @@ export default function RelatorioIndividualPage() {
                 }
                 className={inputClass}
               >
-                <option value={0}>
-                  Selecione um funcionário
-                </option>
+                <option value={0}>Selecione um funcionário</option>
 
                 {funcionariosMock.map((funcionario) => (
-                  <option
-                    key={funcionario.id}
-                    value={funcionario.id}
-                  >
+                  <option key={funcionario.id} value={funcionario.id}>
                     {funcionario.nome}
                   </option>
                 ))}
@@ -146,22 +129,15 @@ export default function RelatorioIndividualPage() {
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium text-slate-700">
-                Mês
-              </span>
+              <span className="text-sm font-medium text-slate-700">Mês</span>
 
               <select
                 value={mes}
-                onChange={(event) =>
-                  setMes(Number(event.target.value))
-                }
+                onChange={(event) => setMes(Number(event.target.value))}
                 className={inputClass}
               >
                 {MESES.map((item) => (
-                  <option
-                    key={item.value}
-                    value={item.value}
-                  >
+                  <option key={item.value} value={item.value}>
                     {item.label}
                   </option>
                 ))}
@@ -169,15 +145,11 @@ export default function RelatorioIndividualPage() {
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium text-slate-700">
-                Ano
-              </span>
+              <span className="text-sm font-medium text-slate-700">Ano</span>
 
               <select
                 value={ano}
-                onChange={(event) =>
-                  setAno(Number(event.target.value))
-                }
+                onChange={(event) => setAno(Number(event.target.value))}
                 className={inputClass}
               >
                 {Array.from({ length: 5 }, (_, index) => {
@@ -200,9 +172,7 @@ export default function RelatorioIndividualPage() {
                   void gerarRelatorio();
                 }}
               >
-                {loading
-                  ? "Gerando..."
-                  : "Gerar relatório individual"}
+                {loading ? "Gerando..." : "Gerar relatório individual"}
               </ActionButton>
             </div>
           </div>
@@ -236,9 +206,7 @@ export default function RelatorioIndividualPage() {
           <DashboardMotion delay={0.1}>
             <SectionCard
               title={relatorioIndividual.funcionario.nome}
-              description={
-                relatorioIndividual.funcionario.cargo
-              }
+              description={relatorioIndividual.funcionario.cargo}
               action={
                 <div className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium capitalize text-slate-600">
                   <FileText className="h-4 w-4" />
@@ -263,17 +231,12 @@ export default function RelatorioIndividualPage() {
 
                 <div>
                   <p className="font-semibold text-slate-950">
-                    Matrícula{" "}
-                    {relatorioIndividual.funcionario.matricula}
+                    Matrícula {relatorioIndividual.funcionario.matricula}
                   </p>
 
                   <p className="mt-1 text-sm text-slate-500">
                     Carga diária de{" "}
-                    {
-                      relatorioIndividual.funcionario
-                        .cargaDiariaHoras
-                    }
-                    h
+                    {relatorioIndividual.funcionario.cargaDiariaHoras}h
                   </p>
                 </div>
               </div>
@@ -334,8 +297,10 @@ export default function RelatorioIndividualPage() {
               <DataTable
                 data={relatorioIndividual.registros}
                 columns={columns}
-                emptyTitle="Nenhum registro encontrado"
-                emptyDescription="Não existem marcações para o funcionário no período selecionado."
+                emptyIcon={CalendarX2}
+                emptyTitle="Nenhuma marcação encontrada"
+                emptyDescription="O funcionário não possui registros no período selecionado."
+                emptyVariant="warning"
               />
             </SectionCard>
           </DashboardMotion>

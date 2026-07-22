@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { EmptyState } from "./EmptyState";
 import { FileText } from "lucide-react";
-
+import type { LucideIcon } from "lucide-react";
 export interface DataTableColumn<T> {
   header: string;
   accessor?: keyof T;
@@ -14,6 +14,9 @@ interface DataTableProps<T> {
   columns: DataTableColumn<T>[];
   emptyTitle?: string;
   emptyDescription?: string;
+  emptyIcon?: LucideIcon;
+  emptyVariant?: "default" | "search" | "warning";
+  emptyAction?: ReactNode;
 }
 
 export function DataTable<T>({
@@ -21,13 +24,18 @@ export function DataTable<T>({
   columns,
   emptyTitle = "Nenhum registro encontrado",
   emptyDescription = "Não existem dados para exibir no momento.",
+  emptyIcon = FileText,
+  emptyVariant = "default",
+  emptyAction,
 }: DataTableProps<T>) {
   if (data.length === 0) {
     return (
       <EmptyState
-        icon={FileText}
+        icon={emptyIcon}
         title={emptyTitle}
         description={emptyDescription}
+        variant={emptyVariant}
+        action={emptyAction}
       />
     );
   }
