@@ -3,52 +3,158 @@
 import { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 
-import { PageHeader } from "@/components/layout/PageHeader";
-import { PageContainer } from "@/components/common/PageContainer";
-import { SectionCard } from "@/components/common/SectionCard";
-import { SearchInput } from "@/components/common/SearchInput";
-import { StatusBadge } from "@/components/common/StatusBadge";
-import { DataTable, type DataTableColumn } from "@/components/common/DataTable";
 import { ActionButton } from "@/components/common/ActionButton";
+import { ActionMenu } from "@/components/common/ActionMenu";
+import { ConfirmDialog } from "@/components/common/ConfirmDialog";
+import { DataTable, type DataTableColumn } from "@/components/common/DataTable";
+import { Drawer } from "@/components/common/Drawer";
 import { Modal } from "@/components/common/Modal";
+import { PageContainer } from "@/components/common/PageContainer";
+import { SearchInput } from "@/components/common/SearchInput";
+import { SectionCard } from "@/components/common/SectionCard";
+import { StatusBadge } from "@/components/common/StatusBadge";
+
+import { PageHeader } from "@/components/layout/PageHeader";
+import { RegistroDetalhes } from "@/components/modules/registro/RegistroDetalhes";
+import { RegistroForm } from "@/components/modules/registro/RegistroForm";
 
 import { usePontos } from "@/hooks/usePontos";
+import { toast } from "sonner";
 import { funcionariosMock } from "@/mocks/funcionarios.mock";
-import type { RegistroPonto } from "@/types/ponto";
+
 import {
   formatarData,
   formatarHora,
   formatarMinutosParaHoras,
 } from "@/lib/formatters";
-import { RegistroForm } from "@/components/modules/registro/RegistroForm";
+
+import type { RegistroPonto, RegistroPontoFormData } from "@/types/ponto";
 
 export default function RegistrosPage() {
-  const { pontos } = usePontos();
+  const { pontos, adicionarPonto, editarPonto, excluirPonto } = usePontos();
 
   const [search, setSearch] = useState("");
   const [modalAberto, setModalAberto] = useState(false);
 
-  const registros = useMemo(() => {
-    const termo = search.toLowerCase();
+  const [registroSelecionado, setRegistroSelecionado] =
+    useState<RegistroPonto | null>(null);
+
+  const [registroEmEdicao, setRegistroEmEdicao] =
+    useState<RegistroPonto | null>(null);
+
+  const [registroParaExcluir, setRegistroParaExcluir] =
+    useState<RegistroPonto | null>(null);
+
+  const [excluindo, setExcluindo] = useState(false);
+
+  const registrosFiltrados = useMemo(() => {
+    const termo = search.trim().toLowerCase();
+
+    if (!termo) {
+      return pontos;
+    }
 
     return pontos.filter((ponto) => {
       const funcionario = funcionariosMock.find(
-        (funcionario) => funcionario.id === ponto.funcionarioId
+        (item) => item.id === ponto.funcionarioId,
       );
 
-      return [funcionario?.nome, ponto.data, ponto.status]
+      return [funcionario?.nome, ponto.data, ponto.status, ponto.observacao]
         .join(" ")
         .toLowerCase()
         .includes(termo);
     });
   }, [pontos, search]);
 
+  function abrirCadastro() {
+    setRegistroSelecionado(null);
+    setRegistroEmEdicao(null);
+    setModalAberto(true);
+  }
+
+  function abrirEdicao(registro: RegistroPonto) {
+    setRegistroSelecionado(null);
+    setRegistroEmEdicao(registro);
+    setModalAberto(true);
+  }
+
+  function fecharFormulario() {
+    setModalAberto(false);
+    setRegistroEmEdicao(null);
+  }
+
+  function abrirDetalhes(registro: RegistroPonto) {
+    setRegistroEmEdicao(null);
+    setRegistroSelecionado(registro);
+  }
+
+  function abrirConfirmacaoExclusao(registro: RegistroPonto) {
+    setRegistroSelecionado(null);
+    setRegistroParaExcluir(registro);
+  }
+
+  function cancelarExclusao() {
+    if (excluindo) {
+      return;
+    }
+
+    setRegistroParaExcluir(null);
+  }
+
+  async function salvarRegistro(data: RegistroPontoFormData) {
+    try {
+      if (registroEmEdicao) {
+        await editarPonto(registroEmEdicao.id, data);
+
+        toast.success("Registro atualizado", {
+          description: "As marcações foram atualizadas com sucesso.",
+        });
+      } else {
+        await adicionarPonto(data);
+
+        toast.success("Registro criado", {
+          description: "As marcações foram adicionadas com sucesso.",
+        });
+      }
+
+      fecharFormulario();
+    } catch {
+      toast.error("Não foi possível salvar", {
+        description: "Verifique os dados e tente novamente.",
+      });
+    }
+  }
+
+  async function confirmarExclusao() {
+    if (!registroParaExcluir) {
+      return;
+    }
+
+    try {
+      setExcluindo(true);
+
+      await excluirPonto(registroParaExcluir.id);
+
+      setRegistroParaExcluir(null);
+
+      toast.success("Registro excluído", {
+        description: "O registro de ponto foi removido com sucesso.",
+      });
+    } catch {
+      toast.error("Não foi possível excluir", {
+        description: "Tente novamente em alguns instantes.",
+      });
+    } finally {
+      setExcluindo(false);
+    }
+  }
+
   const columns: DataTableColumn<RegistroPonto>[] = [
     {
       header: "Funcionário",
       render: (ponto) => {
         const funcionario = funcionariosMock.find(
-          (item) => item.id === ponto.funcionarioId
+          (item) => item.id === ponto.funcionarioId,
         );
 
         return (
@@ -56,6 +162,7 @@ export default function RegistrosPage() {
             <p className="font-semibold text-slate-900">
               {funcionario?.nome ?? "Funcionário não encontrado"}
             </p>
+
             <p className="text-xs text-slate-500">ID #{ponto.funcionarioId}</p>
           </div>
         );
@@ -92,10 +199,12 @@ export default function RegistrosPage() {
     {
       header: "Ações",
       className: "text-right",
-      render: () => (
-        <button className="rounded-lg px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900">
-          Editar
-        </button>
+      render: (registro) => (
+        <ActionMenu
+          onView={() => abrirDetalhes(registro)}
+          onEdit={() => abrirEdicao(registro)}
+          onDelete={() => abrirConfirmacaoExclusao(registro)}
+        />
       ),
     },
   ];
@@ -106,7 +215,7 @@ export default function RegistrosPage() {
         title="Registros de ponto"
         description="Acompanhe as marcações diárias dos funcionários."
         action={
-          <ActionButton onClick={() => setModalAberto(true)}>
+          <ActionButton onClick={abrirCadastro}>
             <Plus className="h-4 w-4" />
             Novo registro
           </ActionButton>
@@ -120,12 +229,12 @@ export default function RegistrosPage() {
           <SearchInput
             value={search}
             onChange={setSearch}
-            placeholder="Buscar registro..."
+            placeholder="Buscar por funcionário, data ou status..."
           />
         }
       >
         <DataTable
-          data={registros}
+          data={registrosFiltrados}
           columns={columns}
           emptyTitle="Nenhum registro encontrado"
           emptyDescription="Tente pesquisar por outro funcionário, data ou status."
@@ -134,15 +243,75 @@ export default function RegistrosPage() {
 
       <Modal
         open={modalAberto}
-        title="Novo registro de ponto"
-        description="Lance manualmente as marcações de entrada e saída."
-        onClose={() => setModalAberto(false)}
+        title={
+          registroEmEdicao
+            ? "Editar registro de ponto"
+            : "Novo registro de ponto"
+        }
+        description={
+          registroEmEdicao
+            ? "Atualize as marcações do registro selecionado."
+            : "Lance manualmente as marcações de entrada e saída."
+        }
+        onClose={fecharFormulario}
       >
         <RegistroForm
-          onCancel={() => setModalAberto(false)}
-          onSubmit={() => setModalAberto(false)}
+          key={registroEmEdicao?.id ?? "novo"}
+          initialData={registroEmEdicao}
+          onCancel={fecharFormulario}
+          onSubmit={salvarRegistro}
         />
       </Modal>
+
+      <Drawer
+        open={Boolean(registroSelecionado)}
+        title="Detalhes do registro"
+        description="Marcações e informações do ponto."
+        onClose={() => setRegistroSelecionado(null)}
+        footer={
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <ActionButton
+              type="button"
+              variant="secondary"
+              onClick={() => setRegistroSelecionado(null)}
+            >
+              Fechar
+            </ActionButton>
+
+            <ActionButton
+              type="button"
+              onClick={() => {
+                if (registroSelecionado) {
+                  abrirEdicao(registroSelecionado);
+                }
+              }}
+            >
+              Editar registro
+            </ActionButton>
+          </div>
+        }
+      >
+        {registroSelecionado && (
+          <RegistroDetalhes registro={registroSelecionado} />
+        )}
+      </Drawer>
+
+      <ConfirmDialog
+        open={Boolean(registroParaExcluir)}
+        title="Excluir registro"
+        description={
+          registroParaExcluir
+            ? `Tem certeza de que deseja excluir o registro do dia ${formatarData(
+                registroParaExcluir.data,
+              )}? Esta ação não poderá ser desfeita.`
+            : ""
+        }
+        confirmLabel="Excluir registro"
+        cancelLabel="Cancelar"
+        loading={excluindo}
+        onCancel={cancelarExclusao}
+        onConfirm={confirmarExclusao}
+      />
     </PageContainer>
   );
 }

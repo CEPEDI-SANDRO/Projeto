@@ -1,47 +1,76 @@
 "use client";
 
 import { useState } from "react";
-import type { RegistroPonto, RegistroPontoFormData } from "@/types/ponto";
+
 import { pontosMock } from "@/mocks/pontos.mock";
 
 import {
+  atualizarPonto,
   buscarPontoPorId,
+  criarPonto,
   listarPontosPorFuncionario,
   listarPontosPorMes,
-  criarPonto,
-  atualizarPonto,
   removerPonto,
 } from "@/services/pontos.service";
 
+import type {
+  RegistroPonto,
+  RegistroPontoFormData,
+} from "@/types/ponto";
+
 export function usePontos() {
-  const [pontos, setPontos] = useState<RegistroPonto[]>(pontosMock);
+  const [pontos, setPontos] = useState<RegistroPonto[]>([
+    ...pontosMock,
+  ]);
+
   const [loading] = useState(false);
 
   function carregarPontos() {
-    setPontos(pontosMock);
+    setPontos([...pontosMock]);
   }
 
   async function adicionarPonto(data: RegistroPontoFormData) {
     const novo = await criarPonto(data);
-    setPontos((prev) => [...prev, novo]);
+
+    setPontos((estadoAtual) => [
+      ...estadoAtual,
+      novo,
+    ]);
+
+    return novo;
   }
 
-  async function editarPonto(id: number, data: Partial<RegistroPontoFormData>) {
+  async function editarPonto(
+    id: number,
+    data: Partial<RegistroPontoFormData>,
+  ) {
     const atualizado = await atualizarPonto(id, data);
 
-    if (!atualizado) return;
+    if (!atualizado) {
+      return undefined;
+    }
 
-    setPontos((prev) =>
-      prev.map((ponto) => (ponto.id === id ? atualizado : ponto))
+    setPontos((estadoAtual) =>
+      estadoAtual.map((ponto) =>
+        ponto.id === id ? atualizado : ponto,
+      ),
     );
+
+    return atualizado;
   }
 
   async function excluirPonto(id: number) {
     const removido = await removerPonto(id);
 
-    if (!removido) return;
+    if (!removido) {
+      return false;
+    }
 
-    setPontos((prev) => prev.filter((ponto) => ponto.id !== id));
+    setPontos((estadoAtual) =>
+      estadoAtual.filter((ponto) => ponto.id !== id),
+    );
+
+    return true;
   }
 
   return {

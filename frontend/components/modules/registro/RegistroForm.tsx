@@ -1,82 +1,291 @@
+"use client";
+
+import {
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
+
 import { ActionButton } from "@/components/common/ActionButton";
+import { funcionariosMock } from "@/mocks/funcionarios.mock";
+
+import type {
+  RegistroPonto,
+  RegistroPontoFormData,
+} from "@/types/ponto";
 
 interface RegistroFormProps {
+  initialData?: RegistroPonto | null;
   onCancel: () => void;
-  onSubmit: () => void;
+  onSubmit: (
+    data: RegistroPontoFormData,
+  ) => void | Promise<void>;
 }
 
-export function RegistroForm({ onCancel, onSubmit }: RegistroFormProps) {
+const valoresIniciais: RegistroPontoFormData = {
+  funcionarioId: 0,
+  data: "",
+  entrada1: null,
+  saida1: null,
+  entrada2: null,
+  saida2: null,
+  observacao: "",
+};
+
+export function RegistroForm({
+  initialData,
+  onCancel,
+  onSubmit,
+}: RegistroFormProps) {
+  const [formData, setFormData] =
+    useState<RegistroPontoFormData>(() => ({
+      funcionarioId:
+        initialData?.funcionarioId ??
+        valoresIniciais.funcionarioId,
+      data: initialData?.data ?? valoresIniciais.data,
+      entrada1:
+        initialData?.entrada1 ?? valoresIniciais.entrada1,
+      saida1:
+        initialData?.saida1 ?? valoresIniciais.saida1,
+      entrada2:
+        initialData?.entrada2 ?? valoresIniciais.entrada2,
+      saida2:
+        initialData?.saida2 ?? valoresIniciais.saida2,
+      observacao:
+        initialData?.observacao ??
+        valoresIniciais.observacao,
+    }));
+
+  const [salvando, setSalvando] = useState(false);
+
+  function atualizarCampo<
+    K extends keyof RegistroPontoFormData,
+  >(
+    campo: K,
+    valor: RegistroPontoFormData[K],
+  ) {
+    setFormData((estadoAtual) => ({
+      ...estadoAtual,
+      [campo]: valor,
+    }));
+  }
+
+  async function handleSubmit(
+    event: FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+
+    if (!formData.funcionarioId || !formData.data) {
+      return;
+    }
+
+    try {
+      setSalvando(true);
+      await onSubmit(formData);
+    } finally {
+      setSalvando(false);
+    }
+  }
+
   return (
     <form
-      className="space-y-5"
-      onSubmit={(event) => {
-        event.preventDefault();
-        onSubmit();
-      }}
+      className="space-y-6"
+      onSubmit={handleSubmit}
     >
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Funcionário">
-          <select className={inputClass}>
-            <option>Selecione um funcionário</option>
-            <option>Ana Paula Souza</option>
-            <option>Carlos Henrique Lima</option>
-            <option>Mariana Alves</option>
-          </select>
+      <section>
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold text-slate-900">
+            Identificação
+          </h3>
+
+          <p className="mt-1 text-xs text-slate-500">
+            Selecione o funcionário e a data de referência.
+          </p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Funcionário" required>
+            <select
+              value={formData.funcionarioId}
+              onChange={(event) =>
+                atualizarCampo(
+                  "funcionarioId",
+                  Number(event.target.value),
+                )
+              }
+              className={inputClass}
+              required
+            >
+              <option value={0}>
+                Selecione um funcionário
+              </option>
+
+              {funcionariosMock
+                .filter(
+                  (funcionario) =>
+                    funcionario.status === "ativo",
+                )
+                .map((funcionario) => (
+                  <option
+                    key={funcionario.id}
+                    value={funcionario.id}
+                  >
+                    {funcionario.nome}
+                  </option>
+                ))}
+            </select>
+          </Field>
+
+          <Field label="Data" required>
+            <input
+              type="date"
+              value={formData.data}
+              onChange={(event) =>
+                atualizarCampo("data", event.target.value)
+              }
+              className={inputClass}
+              required
+            />
+          </Field>
+        </div>
+      </section>
+
+      <section className="border-t border-slate-200 pt-5">
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold text-slate-900">
+            Marcações do dia
+          </h3>
+
+          <p className="mt-1 text-xs text-slate-500">
+            Informe as entradas e saídas registradas.
+          </p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Entrada 1">
+            <input
+              type="time"
+              value={formData.entrada1 ?? ""}
+              onChange={(event) =>
+                atualizarCampo(
+                  "entrada1",
+                  event.target.value || null,
+                )
+              }
+              className={inputClass}
+            />
+          </Field>
+
+          <Field label="Saída 1">
+            <input
+              type="time"
+              value={formData.saida1 ?? ""}
+              onChange={(event) =>
+                atualizarCampo(
+                  "saida1",
+                  event.target.value || null,
+                )
+              }
+              className={inputClass}
+            />
+          </Field>
+
+          <Field label="Entrada 2">
+            <input
+              type="time"
+              value={formData.entrada2 ?? ""}
+              onChange={(event) =>
+                atualizarCampo(
+                  "entrada2",
+                  event.target.value || null,
+                )
+              }
+              className={inputClass}
+            />
+          </Field>
+
+          <Field label="Saída 2">
+            <input
+              type="time"
+              value={formData.saida2 ?? ""}
+              onChange={(event) =>
+                atualizarCampo(
+                  "saida2",
+                  event.target.value || null,
+                )
+              }
+              className={inputClass}
+            />
+          </Field>
+        </div>
+      </section>
+
+      <section className="border-t border-slate-200 pt-5">
+        <Field label="Observação">
+          <textarea
+            rows={3}
+            value={formData.observacao ?? ""}
+            onChange={(event) =>
+              atualizarCampo(
+                "observacao",
+                event.target.value,
+              )
+            }
+            className={`${inputClass} h-auto resize-none py-3`}
+            placeholder="Ex.: registro lançado manualmente pelo RH"
+          />
         </Field>
+      </section>
 
-        <Field label="Data">
-          <input type="date" className={inputClass} />
-        </Field>
-
-        <Field label="Entrada 1">
-          <input type="time" className={inputClass} />
-        </Field>
-
-        <Field label="Saída 1">
-          <input type="time" className={inputClass} />
-        </Field>
-
-        <Field label="Entrada 2">
-          <input type="time" className={inputClass} />
-        </Field>
-
-        <Field label="Saída 2">
-          <input type="time" className={inputClass} />
-        </Field>
-      </div>
-
-      <Field label="Observação">
-        <textarea
-          rows={3}
-          className={`${inputClass} h-auto resize-none py-3`}
-          placeholder="Ex: registro lançado manualmente pelo RH"
-        />
-      </Field>
-
-      <div className="flex justify-end gap-3 border-t border-slate-200 pt-5">
-        <ActionButton type="button" variant="secondary" onClick={onCancel}>
+      <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end">
+        <ActionButton
+          type="button"
+          variant="secondary"
+          onClick={onCancel}
+          disabled={salvando}
+        >
           Cancelar
         </ActionButton>
 
-        <ActionButton type="submit">Salvar registro</ActionButton>
+        <ActionButton
+          type="submit"
+          disabled={salvando}
+        >
+          {salvando
+            ? "Salvando..."
+            : initialData
+              ? "Salvar alterações"
+              : "Salvar registro"}
+        </ActionButton>
       </div>
     </form>
   );
 }
 
 const inputClass =
-  "mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20";
+  "mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20";
+
+interface FieldProps {
+  label: string;
+  required?: boolean;
+  children: ReactNode;
+}
 
 function Field({
   label,
+  required,
   children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+}: FieldProps) {
   return (
     <label className="block">
-      <span className="text-sm font-medium text-slate-700">{label}</span>
+      <span className="text-sm font-medium text-slate-700">
+        {label}
+
+        {required && (
+          <span className="ml-1 text-red-500">*</span>
+        )}
+      </span>
+
       {children}
     </label>
   );
