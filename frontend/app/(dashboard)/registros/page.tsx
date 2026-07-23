@@ -1,69 +1,178 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, RefreshCw } from "lucide-react";
+import { Clock3, Plus, SearchX } from "lucide-react";
 import { toast } from "sonner";
 
-import { PageHeader } from "@/components/layout/PageHeader";
-import { PageContainer } from "@/components/common/PageContainer";
-import { SectionCard } from "@/components/common/SectionCard";
-import { SearchInput } from "@/components/common/SearchInput";
-import { StatusBadge } from "@/components/common/StatusBadge";
-import { DataTable, type DataTableColumn } from "@/components/common/DataTable";
 import { ActionButton } from "@/components/common/ActionButton";
+import { ActionMenu } from "@/components/common/ActionMenu";
+import { ConfirmDialog } from "@/components/common/ConfirmDialog";
+import { DataTable, type DataTableColumn } from "@/components/common/DataTable";
+import { Drawer } from "@/components/common/Drawer";
 import { Modal } from "@/components/common/Modal";
+import { PageContainer } from "@/components/common/PageContainer";
+import { SearchInput } from "@/components/common/SearchInput";
+import { SectionCard } from "@/components/common/SectionCard";
+import { StatusBadge } from "@/components/common/StatusBadge";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { PageSkeleton } from "@/components/common/PageSkeleton";
+import { RegistroDetalhes } from "@/components/modules/registro/RegistroDetalhes";
+import { RegistroForm } from "@/components/modules/registro/RegistroForm";
 
 import { usePontos } from "@/hooks/usePontos";
 import { useFuncionarios } from "@/hooks/useFuncionarios";
-import type { RegistroPonto } from "@/types/ponto";
+
 import {
   formatarData,
   formatarHora,
   formatarMinutosParaHoras,
 } from "@/lib/formatters";
-import { RegistroForm } from "@/components/modules/registro/RegistroForm";
+
+import type { RegistroPonto, RegistroPontoFormData } from "@/types/ponto";
 
 export default function RegistrosPage() {
-  const { pontos, loading: loadingPontos, error: errorPontos, carregarPontos, adicionarPonto } = usePontos();
-  const { funcionarios, carregarFuncionarios } = useFuncionarios();
+  const {
+    pontos,
+    loading: loadingPontos,
+    error: errorPontos,
+    carregarPontos,
+    adicionarPonto,
+    editarPonto,
+    excluirPonto,
+  } = usePontos();
+
+  const {
+    funcionarios,
+    carregarFuncionarios,
+  } = useFuncionarios();
 
   const [search, setSearch] = useState("");
   const [modalAberto, setModalAberto] = useState(false);
 
-  // Carrega pontos e funcionários ao montar a tela
+  const [registroSelecionado, setRegistroSelecionado] =
+    useState<RegistroPonto | null>(null);
+
+  const [registroEmEdicao, setRegistroEmEdicao] =
+    useState<RegistroPonto | null>(null);
+
+  const [registroParaExcluir, setRegistroParaExcluir] =
+    useState<RegistroPonto | null>(null);
+
+  const [excluindo, setExcluindo] = useState(false);
+
   useEffect(() => {
     carregarPontos();
     carregarFuncionarios();
   }, []);
 
-  // Exibe erro do servidor caso aconteça
-  useEffect(() => {
-    if (errorPontos) {
-      toast.error(errorPontos);
-    }
-  }, [errorPontos]);
+  const registrosFiltrados = useMemo(() => {
+    const termo = search.trim().toLowerCase();
 
-  const registros = useMemo(() => {
-    const termo = search.toLowerCase();
+    if (!termo) {
+      return pontos;
+    }
 
     return pontos.filter((ponto) => {
       const funcionario = funcionarios.find(
-        (f) => f.id === ponto.funcionarioId
+        (item) => item.id === ponto.funcionarioId,
       );
 
-      return [funcionario?.nome, ponto.data, ponto.status]
+      return [funcionario?.nome, ponto.data, ponto.status, ponto.observacao]
         .join(" ")
         .toLowerCase()
         .includes(termo);
     });
   }, [pontos, funcionarios, search]);
 
+  function abrirCadastro() {
+    setRegistroSelecionado(null);
+    setRegistroEmEdicao(null);
+    setModalAberto(true);
+  }
+
+  function abrirEdicao(registro: RegistroPonto) {
+    setRegistroSelecionado(null);
+    setRegistroEmEdicao(registro);
+    setModalAberto(true);
+  }
+
+  function fecharFormulario() {
+    setModalAberto(false);
+    setRegistroEmEdicao(null);
+  }
+
+  function abrirDetalhes(registro: RegistroPonto) {
+    setRegistroEmEdicao(null);
+    setRegistroSelecionado(registro);
+  }
+
+  function abrirConfirmacaoExclusao(registro: RegistroPonto) {
+    setRegistroSelecionado(null);
+    setRegistroParaExcluir(registro);
+  }
+
+  function cancelarExclusao() {
+    if (excluindo) {
+      return;
+    }
+
+    setRegistroParaExcluir(null);
+  }
+
+  async function salvarRegistro(data: RegistroPontoFormData) {
+    try {
+      if (registroEmEdicao) {
+        await editarPonto(registroEmEdicao.id, data);
+
+        toast.success("Registro atualizado", {
+          description: "As marcações foram atualizadas com sucesso.",
+        });
+      } else {
+        await adicionarPonto(data);
+
+        toast.success("Registro criado", {
+          description: "As marcações foram adicionadas com sucesso.",
+        });
+      }
+
+      fecharFormulario();
+    } catch {
+      toast.error("Não foi possível salvar", {
+        description: "Verifique os dados e tente novamente.",
+      });
+    }
+  }
+
+  async function confirmarExclusao() {
+    if (!registroParaExcluir) {
+      return;
+    }
+
+    try {
+      setExcluindo(true);
+
+      await excluirPonto(registroParaExcluir.id);
+
+      setRegistroParaExcluir(null);
+
+      toast.success("Registro excluído", {
+        description: "O registro de ponto foi removido com sucesso.",
+      });
+    } catch {
+      toast.error("Não foi possível excluir", {
+        description: "Tente novamente em alguns instantes.",
+      });
+    } finally {
+      setExcluindo(false);
+    }
+  }
+
   const columns: DataTableColumn<RegistroPonto>[] = [
     {
       header: "Funcionário",
       render: (ponto) => {
         const funcionario = funcionarios.find(
-          (item) => item.id === ponto.funcionarioId
+          (item) => item.id === ponto.funcionarioId,
         );
 
         return (
@@ -71,6 +180,7 @@ export default function RegistrosPage() {
             <p className="font-semibold text-slate-900">
               {funcionario?.nome ?? "Funcionário não encontrado"}
             </p>
+
             <p className="text-xs text-slate-500">ID #{ponto.funcionarioId}</p>
           </div>
         );
@@ -107,18 +217,19 @@ export default function RegistrosPage() {
     {
       header: "Ações",
       className: "text-right",
-      render: () => (
-        <button className="rounded-lg px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900">
-          Editar
-        </button>
+      render: (registro) => (
+        <ActionMenu
+          onView={() => abrirDetalhes(registro)}
+          onEdit={() => abrirEdicao(registro)}
+          onDelete={() => abrirConfirmacaoExclusao(registro)}
+        />
       ),
     },
   ];
 
-  const handleRecarregar = () => {
-    carregarPontos();
-    carregarFuncionarios();
-  };
+  if (loadingPontos && pontos.length === 0) {
+    return <PageSkeleton />;
+  }
 
   return (
     <PageContainer>
@@ -126,23 +237,19 @@ export default function RegistrosPage() {
         title="Registros de ponto"
         description="Acompanhe as marcações diárias dos funcionários."
         action={
-          <div className="flex gap-2">
-            <button
-              onClick={handleRecarregar}
-              title="Recarregar dados"
-              disabled={loadingPontos}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-100 active:scale-95 disabled:opacity-50"
-            >
-              <RefreshCw className={`h-4 w-4 ${loadingPontos ? 'animate-spin' : ''}`} />
-            </button>
-            
-            <ActionButton onClick={() => setModalAberto(true)}>
-              <Plus className="h-4 w-4" />
-              Novo registro
-            </ActionButton>
-          </div>
+          <ActionButton onClick={abrirCadastro}>
+            <Plus className="h-4 w-4" />
+            Novo registro
+          </ActionButton>
         }
       />
+
+      {errorPontos && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <p className="font-semibold">Erro ao carregar registros de ponto</p>
+          <p>{errorPontos}</p>
+        </div>
+      )}
 
       <SectionCard
         title="Marcações registradas"
@@ -151,46 +258,109 @@ export default function RegistrosPage() {
           <SearchInput
             value={search}
             onChange={setSearch}
-            placeholder="Buscar registro..."
+            placeholder="Buscar por funcionário, data ou status..."
           />
         }
       >
-        {loadingPontos && pontos.length === 0 ? (
-          <div className="flex h-48 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 bg-white">
-            <RefreshCw className="h-6 w-6 animate-spin text-slate-400" />
-            <p className="text-sm font-medium text-slate-500">Buscando marcações no banco de dados...</p>
-          </div>
-        ) : (
-          <DataTable
-            data={registros}
-            columns={columns}
-            emptyTitle="Nenhum registro encontrado"
-            emptyDescription="Tente pesquisar por outro funcionário, data ou status."
-          />
-        )}
+        <DataTable
+          data={registrosFiltrados}
+          columns={columns}
+          emptyIcon={search ? SearchX : Clock3}
+          emptyVariant={search ? "search" : "default"}
+          emptyTitle={
+            search ? "Nenhum registro encontrado" : "Nenhum registro de ponto"
+          }
+          emptyDescription={
+            search
+              ? "Tente pesquisar por outro funcionário, data ou status."
+              : "Ainda não existem marcações de ponto cadastradas."
+          }
+          emptyAction={
+            !search ? (
+              <ActionButton onClick={abrirCadastro}>
+                <Plus className="h-4 w-4" />
+                Novo registro
+              </ActionButton>
+            ) : undefined
+          }
+        />
       </SectionCard>
 
       <Modal
         open={modalAberto}
-        title="Novo registro de ponto"
-        description="Lance manualmente as marcações de entrada e saída."
-        onClose={() => setModalAberto(false)}
+        title={
+          registroEmEdicao
+            ? "Editar registro de ponto"
+            : "Novo registro de ponto"
+        }
+        description={
+          registroEmEdicao
+            ? "Atualize as marcações do registro selecionado."
+            : "Lance manualmente as marcações de entrada e saída."
+        }
+        onClose={fecharFormulario}
       >
         <RegistroForm
+          key={registroEmEdicao?.id ?? "novo"}
+          initialData={registroEmEdicao}
           funcionarios={funcionarios}
-          onCancel={() => setModalAberto(false)}
-          onSubmit={async (data) => {
-            try {
-              await adicionarPonto(data);
-              toast.success("Registro de ponto lançado com sucesso!");
-              setModalAberto(false);
-            } catch (err) {
-              const msg = err instanceof Error ? err.message : "Erro ao lançar ponto.";
-              toast.error(msg);
-            }
-          }}
+          onCancel={fecharFormulario}
+          onSubmit={salvarRegistro}
         />
       </Modal>
+
+      <Drawer
+        open={Boolean(registroSelecionado)}
+        title="Detalhes do registro"
+        description="Marcações e informações do ponto."
+        onClose={() => setRegistroSelecionado(null)}
+        footer={
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <ActionButton
+              type="button"
+              variant="secondary"
+              onClick={() => setRegistroSelecionado(null)}
+            >
+              Fechar
+            </ActionButton>
+
+            <ActionButton
+              type="button"
+              onClick={() => {
+                if (registroSelecionado) {
+                  abrirEdicao(registroSelecionado);
+                }
+              }}
+            >
+              Editar registro
+            </ActionButton>
+          </div>
+        }
+      >
+        {registroSelecionado && (
+          <RegistroDetalhes
+            registro={registroSelecionado}
+            funcionarios={funcionarios}
+          />
+        )}
+      </Drawer>
+
+      <ConfirmDialog
+        open={Boolean(registroParaExcluir)}
+        title="Excluir registro"
+        description={
+          registroParaExcluir
+            ? `Tem certeza de que deseja excluir o registro do dia ${formatarData(
+                registroParaExcluir.data,
+              )}? Esta ação não poderá ser desfeita.`
+            : ""
+        }
+        confirmLabel="Excluir registro"
+        cancelLabel="Cancelar"
+        loading={excluindo}
+        onCancel={cancelarExclusao}
+        onConfirm={confirmarExclusao}
+      />
     </PageContainer>
   );
 }

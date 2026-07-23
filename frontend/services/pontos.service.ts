@@ -51,7 +51,6 @@ export async function listarPontosPorMes(
     const pontos = await listarPontos();
     return pontos.filter((ponto) => {
       const data = new Date(ponto.data);
-      // getMonth() retorna 0-11, logo somamos 1
       return data.getMonth() + 1 === mes && data.getFullYear() === ano;
     });
   } catch (error) {
