@@ -1,15 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import type {
-  RelatorioGeral,
-  RelatorioIndividual,
-} from "@/types/relatorio";
 
 import {
   gerarRelatorioGeral,
   gerarRelatorioIndividual,
 } from "@/services/relatorios.service";
+
+import type {
+  RelatorioGeral,
+  RelatorioIndividual,
+} from "@/types/relatorio";
 
 export function useRelatorios() {
   const [relatorioIndividual, setRelatorioIndividual] =
@@ -23,19 +24,40 @@ export function useRelatorios() {
   async function buscarRelatorioIndividual(
     funcionarioId: number,
     mes: number,
-    ano: number
+    ano: number,
   ) {
-    setLoading(true);
-    const data = await gerarRelatorioIndividual(funcionarioId, mes, ano);
-    setRelatorioIndividual(data);
-    setLoading(false);
+    try {
+      setLoading(true);
+
+      const data = await gerarRelatorioIndividual(
+        funcionarioId,
+        mes,
+        ano,
+      );
+
+      setRelatorioIndividual(data);
+
+      return data;
+    } finally {
+      setLoading(false);
+    }
   }
 
-  async function buscarRelatorioGeral(mes: number, ano: number) {
-    setLoading(true);
-    const data = await gerarRelatorioGeral(mes, ano);
-    setRelatorioGeral(data);
-    setLoading(false);
+  async function buscarRelatorioGeral(
+    mes: number,
+    ano: number,
+  ) {
+    try {
+      setLoading(true);
+
+      const data = await gerarRelatorioGeral(mes, ano);
+
+      setRelatorioGeral(data);
+
+      return data;
+    } finally {
+      setLoading(false);
+    }
   }
 
   return {

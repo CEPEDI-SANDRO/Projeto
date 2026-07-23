@@ -12,8 +12,9 @@ import {
 } from "@/services/funcionarios.service";
 
 export function useFuncionarios() {
-  const [funcionarios, setFuncionarios] =
-    useState<Funcionario[]>(funcionariosMock);
+  const [funcionarios, setFuncionarios] = useState<Funcionario[]>([
+    ...funcionariosMock,
+  ]);
 
   const [loading] = useState(false);
 
@@ -28,7 +29,7 @@ export function useFuncionarios() {
 
   async function editarFuncionario(
     id: number,
-    data: Partial<FuncionarioFormData>
+    data: Partial<FuncionarioFormData>,
   ) {
     const atualizado = await atualizarFuncionario(id, data);
 
@@ -36,8 +37,8 @@ export function useFuncionarios() {
 
     setFuncionarios((prev) =>
       prev.map((funcionario) =>
-        funcionario.id === id ? atualizado : funcionario
-      )
+        funcionario.id === id ? atualizado : funcionario,
+      ),
     );
   }
 
@@ -47,7 +48,7 @@ export function useFuncionarios() {
     if (!removido) return;
 
     setFuncionarios((prev) =>
-      prev.filter((funcionario) => funcionario.id !== id)
+      prev.filter((funcionario) => funcionario.id !== id),
     );
   }
 
