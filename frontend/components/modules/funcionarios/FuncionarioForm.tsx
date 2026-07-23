@@ -24,6 +24,7 @@ interface FuncionarioFormProps {
 
 const valoresIniciais: FuncionarioFormData = {
   nome: "",
+  documento: "",
   cargo: "",
   matricula: "",
   cargaDiariaHoras: 8,
@@ -40,6 +41,7 @@ export function FuncionarioForm({
   const [formData, setFormData] =
     useState<FuncionarioFormData>(() => ({
       nome: initialData?.nome ?? valoresIniciais.nome,
+      documento: initialData?.documento ?? valoresIniciais.documento,
       cargo: initialData?.cargo ?? valoresIniciais.cargo,
       matricula:
         initialData?.matricula ?? valoresIniciais.matricula,
@@ -73,6 +75,7 @@ export function FuncionarioForm({
 
     if (
       !formData.nome.trim() ||
+      !formData.documento.trim() ||
       !formData.cargo.trim() ||
       !formData.matricula.trim()
     ) {
@@ -85,6 +88,7 @@ export function FuncionarioForm({
       await onSubmit({
         ...formData,
         nome: formData.nome.trim(),
+        documento: formData.documento.trim(),
         cargo: formData.cargo.trim(),
         matricula: formData.matricula.trim(),
       });
@@ -115,6 +119,19 @@ export function FuncionarioForm({
                 atualizarCampo("nome", event.target.value)
               }
               placeholder="Ex.: Ana Paula Souza"
+              className={inputClass}
+              required
+            />
+          </Field>
+
+          <Field label="Documento (CPF / CTPS)" required>
+            <input
+              type="text"
+              value={formData.documento}
+              onChange={(event) =>
+                atualizarCampo("documento", event.target.value)
+              }
+              placeholder="Ex.: 123.456.789-00"
               className={inputClass}
               required
             />
@@ -179,7 +196,7 @@ export function FuncionarioForm({
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Carga diária">
+          <Field label="Carga diária (horas)">
             <input
               type="number"
               min={1}
@@ -195,7 +212,7 @@ export function FuncionarioForm({
             />
           </Field>
 
-          <Field label="Carga mensal">
+          <Field label="Carga mensal (horas)">
             <input
               type="number"
               min={1}

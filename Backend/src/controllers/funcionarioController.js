@@ -27,7 +27,7 @@ funcionarioController.cadastrar = (req, res) => {
     `;
 
     // Executa o comando no SQLite
-    db.run(sqlInserirFuncionario, [nome, documento, cargo || null, matricula || null, cargaDiaria, cargaMensal, statusValido, jId, criadoEm], function(err) {
+    db.run(sqlInserirFuncionario, [nome, documento, cargo || null, matricula || null, cargaDiaria, cargaMensal, statusValido, jId, criadoEm], function (err) {
         if (err) {
             console.error('Erro ao inserir funcionário no banco:', err.message);
             if (err.message.includes("UNIQUE")) {
@@ -112,7 +112,7 @@ funcionarioController.atualizar = (req, res) => {
             WHERE id = ?
         `;
 
-        db.run(sqlAtualizar, [novoNome, novoDocumento, novoCargo, novaMatricula, novaCargaDiaria, novaCargaMensal, novoStatus, novaJornadaId, id], function(err) {
+        db.run(sqlAtualizar, [novoNome, novoDocumento, novoCargo, novaMatricula, novaCargaDiaria, novaCargaMensal, novoStatus, novaJornadaId, id], function (err) {
             if (err) {
                 console.error(`Erro ao atualizar funcionário ID ${id}:`, err.message);
                 if (err.message.includes("UNIQUE")) {
@@ -150,7 +150,7 @@ funcionarioController.deletar = (req, res) => {
         });
 
         // Deleta o funcionário
-        db.run(`DELETE FROM funcionarios WHERE id = ?`, [id], function(err) {
+        db.run(`DELETE FROM funcionarios WHERE id = ?`, [id], function (err) {
             if (err) {
                 console.error(`Erro ao deletar funcionário ID ${id}:`, err.message);
                 return res.status(500).json({ error: "Erro ao deletar o funcionário no banco de dados." });

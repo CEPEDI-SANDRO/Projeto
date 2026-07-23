@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   useParams,
@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { ActionButton } from "@/components/common/ActionButton";
 import { EmptyState } from "@/components/common/EmptyState";
 import { PageContainer } from "@/components/common/PageContainer";
+import { PageSkeleton } from "@/components/common/PageSkeleton";
 import { SectionCard } from "@/components/common/SectionCard";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { FuncionarioDetalhes } from "@/components/modules/funcionarios/FuncionarioDetalhes";
@@ -24,9 +25,7 @@ import { FuncionarioForm } from "@/components/modules/funcionarios/FuncionarioFo
 
 import { useFuncionarios } from "@/hooks/useFuncionarios";
 
-import type {
-  FuncionarioFormData,
-} from "@/types/funcionario";
+import type { Funcionario, FuncionarioFormData } from "@/types/funcionario";
 
 export default function FuncionarioDetalhesPage() {
   const params = useParams<{ id: string }>();
@@ -35,18 +34,30 @@ export default function FuncionarioDetalhesPage() {
 
   const funcionarioId = Number(params.id);
 
-  const { funcionarios, editarFuncionario } =
+  const { loading, buscarFuncionarioPorId, editarFuncionario } =
     useFuncionarios();
 
-  const funcionario = funcionarios.find(
-    (item) => item.id === funcionarioId,
-  );
+  const [funcionario, setFuncionario] = useState<Funcionario | undefined>(undefined);
+  const [carregando, setCarregando] = useState(true);
 
   const editarInicialmente =
     searchParams.get("editar") === "true";
 
   const [editando, setEditando] =
     useState(editarInicialmente);
+
+  // Carrega o funcionário diretamente pelo ID ao montar a página
+  useEffect(() => {
+    if (!Number.isFinite(funcionarioId)) {
+      setCarregando(false);
+      return;
+    }
+
+    buscarFuncionarioPorId(funcionarioId).then((data) => {
+      setFuncionario(data);
+      setCarregando(false);
+    });
+  }, [funcionarioId]);
 
   async function salvarAlteracoes(
     data: FuncionarioFormData,
@@ -56,7 +67,11 @@ export default function FuncionarioDetalhesPage() {
     }
 
     try {
-      await editarFuncionario(funcionario.id, data);
+      const atualizado = await editarFuncionario(funcionario.id, data);
+
+      if (atualizado) {
+        setFuncionario(atualizado);
+      }
 
       setEditando(false);
 
@@ -72,6 +87,10 @@ export default function FuncionarioDetalhesPage() {
           "Verifique os dados e tente novamente.",
       });
     }
+  }
+
+  if (carregando || loading) {
+    return <PageSkeleton />;
   }
 
   if (!Number.isFinite(funcionarioId) || !funcionario) {

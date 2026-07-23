@@ -3,6 +3,7 @@ export type StatusVinculo = "ativo" | "inativo";
 export interface Funcionario {
   id: number;
   nome: string;
+  documento: string;
   cargo: string;
   matricula: string;
   cargaDiariaHoras: number;
@@ -15,6 +16,7 @@ export interface Funcionario {
 
 export interface FuncionarioFormData {
   nome: string;
+  documento: string;
   cargo: string;
   matricula: string;
   cargaDiariaHoras: number;

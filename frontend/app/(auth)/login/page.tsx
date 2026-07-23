@@ -13,6 +13,7 @@ import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
 import { ActionButton } from "@/components/common/ActionButton";
+import { realizarLogin } from "@/services/auth.service";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -39,21 +40,36 @@ export default function LoginPage() {
     try {
       setEntrando(true);
 
-      // Simulação temporária até a integração com o backend.
-      await new Promise((resolve) =>
-        window.setTimeout(resolve, 700),
-      );
-
-      toast.success("Login realizado", {
-        description: "Bem-vindo ao Chronos Ponto.",
+      const response = await realizarLogin({
+        usuario: usuario.trim(),
+        senha,
       });
 
-      void lembrar;
+      if (response.sucesso) {
+        // Armazena dados de autenticação e sessão no localStorage
+        localStorage.setItem("chronos_token", response.token);
+        localStorage.setItem("chronos_user", JSON.stringify(response.usuario));
 
-      router.push("/");
-    } catch {
+        if (lembrar) {
+          localStorage.setItem("chronos_remember_user", usuario.trim());
+        } else {
+          localStorage.removeItem("chronos_remember_user");
+        }
+
+        toast.success("Login realizado com sucesso", {
+          description: `Bem-vindo ao Chronos Ponto, ${response.usuario.nome}!`,
+        });
+
+        router.push("/");
+      }
+    } catch (error) {
+      const mensagem =
+        error instanceof Error
+          ? error.message
+          : "Confira as credenciais e tente novamente.";
+
       toast.error("Não foi possível entrar", {
-        description: "Confira os dados e tente novamente.",
+        description: mensagem,
       });
     } finally {
       setEntrando(false);
@@ -157,7 +173,7 @@ export default function LoginPage() {
                   onChange={(event) =>
                     setUsuario(event.target.value)
                   }
-                  placeholder="Digite seu usuário"
+                  placeholder="Digite seu usuário (ex: admin)"
                   autoComplete="username"
                   className={inputClass}
                 />
@@ -225,7 +241,7 @@ export default function LoginPage() {
                 onClick={() =>
                   toast.info("Recuperação de senha", {
                     description:
-                      "Esta funcionalidade será ligada ao backend.",
+                      "Entre em contato com o suporte ou administrador do sistema.",
                   })
                 }
                 className="text-sm font-semibold text-yellow-700 transition hover:text-yellow-800"
@@ -246,10 +262,11 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs leading-5 text-slate-500">
-              Nesta etapa, o acesso é apenas simulado. A
-              autenticação real será conectada posteriormente à
-              API Node.js/Express.
+            <p className="text-xs leading-5 text-slate-600">
+              <strong className="font-semibold text-slate-900">Autenticação Integrada:</strong> O login é validado em tempo real pelo banco de dados SQLite do backend.
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Usuário padrão: <code className="rounded bg-slate-200 px-1 py-0.5 font-mono text-slate-800">admin</code> | Senha: <code className="rounded bg-slate-200 px-1 py-0.5 font-mono text-slate-800">admin123</code>
             </p>
           </div>
         </div>

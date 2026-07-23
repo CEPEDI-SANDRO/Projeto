@@ -4,6 +4,9 @@ const sqlite3 = require('sqlite3').verbose();
 // Importa o módulo nativo 'path' do Node.js, usado para gerenciar e resolver caminhos de arquivos no sistema
 const path = require('path');
 
+// Importa bcryptjs para hash seguro de senhas
+const bcrypt = require('bcryptjs');
+
 // Resolve o caminho físico do banco de dados. 
 // O '__dirname' pega a pasta atual (src/config). 
 // Os dois parâmetros '..' sobem duas pastas para salvar o arquivo 'banco_ponto.sqlite' diretamente na raiz do projeto.
@@ -25,7 +28,49 @@ const db = new sqlite3.Database(caminhoBanco, (err) => {
 // O 'db.serialize' garante que o SQLite execute os comandos SQL estritamente um após o outro, evitando problemas de concorrência.
 db.serialize(() => {
     
-    // Define a instrução SQL para criar a tabela de funcionários caso ela ainda não exista no arquivo
+    // 1. Tabela de usuários para autenticação
+    const sqlTabelaUsuarios = `
+        CREATE TABLE IF NOT EXISTS usuarios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            usuario TEXT UNIQUE NOT NULL,
+            senha TEXT NOT NULL,
+            nome TEXT NOT NULL,
+            cargo TEXT DEFAULT 'Administrador',
+            criadoEm TEXT NOT NULL
+        )
+    `;
+
+    db.run(sqlTabelaUsuarios, (err) => {
+        if (err) {
+            console.error('Erro ao criar tabela usuarios:', err.message);
+        } else {
+            // Verifica se já existe ao menos um usuário cadastrado
+            db.get("SELECT COUNT(*) as total FROM usuarios", [], (err, row) => {
+                if (err) {
+                    console.error('Erro ao verificar usuarios:', err.message);
+                    return;
+                }
+                
+                // Se a tabela estiver vazia, cria o usuário padrão 'admin' / 'admin123'
+                if (row.total === 0) {
+                    const senhaHash = bcrypt.hashSync('admin123', 10);
+                    const sqlInsertAdmin = `
+                        INSERT INTO usuarios (usuario, senha, nome, cargo, criadoEm)
+                        VALUES (?, ?, ?, ?, ?)
+                    `;
+                    db.run(sqlInsertAdmin, ['admin', senhaHash, 'Administrador', 'Administrador', new Date().toISOString()], (err) => {
+                        if (err) {
+                            console.error('Erro ao criar usuario admin padrão:', err.message);
+                        } else {
+                            console.log('Usuário admin padrão ("admin" / "admin123") criado com sucesso no banco de dados.');
+                        }
+                    });
+                }
+            });
+        }
+    });
+
+    // 2. Define a instrução SQL para criar a tabela de funcionários caso ela ainda não exista no arquivo
     const sqlTabelaFuncionarios = `
         CREATE TABLE IF NOT EXISTS funcionarios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -77,7 +122,7 @@ db.serialize(() => {
         }
     });
 
-    // Define a instrução SQL para criar a tabela de pontos (onde as 4 marcações diárias serão salvas)
+    // 3. Define a instrução SQL para criar a tabela de pontos (onde as 4 marcações diárias serão salvas)
     const sqlTabelaPontos = `
         CREATE TABLE IF NOT EXISTS pontos (
             id INTEGER PRIMARY KEY AUTOINCREMENT, -- Chave primária do registro de ponto

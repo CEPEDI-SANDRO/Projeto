@@ -3,6 +3,7 @@ import {
   BriefcaseBusiness,
   CalendarDays,
   Clock3,
+  CreditCard,
   Hash,
 } from "lucide-react";
 
@@ -53,6 +54,12 @@ export function FuncionarioDetalhes({
         </h3>
 
         <div className="divide-y divide-slate-100 rounded-2xl border border-slate-200">
+          <DetailRow
+            icon={CreditCard}
+            label="Documento (CPF / CTPS)"
+            value={funcionario.documento || "—"}
+          />
+
           <DetailRow
             icon={BriefcaseBusiness}
             label="Cargo"
