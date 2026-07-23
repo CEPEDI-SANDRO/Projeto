@@ -11,8 +11,6 @@ import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 
-type ThemeOption = "light" | "dark" | "system";
-
 const themeOptions = [
   {
     value: "light" as const,

@@ -25,31 +25,35 @@ export default defineConfig({
   },
 
   projects: [
-    {
-      name: "chromium",
-      use: {
-        ...devices["Desktop Chrome"],
-      },
+  {
+    name: "chromium",
+    testIgnore: /mobile\.spec\.ts/,
+    use: {
+      ...devices["Desktop Chrome"],
     },
-    {
-      name: "firefox",
-      use: {
-        ...devices["Desktop Firefox"],
-      },
+  },
+  {
+    name: "firefox",
+    testIgnore: /mobile\.spec\.ts/,
+    use: {
+      ...devices["Desktop Firefox"],
     },
-    {
-      name: "webkit",
-      use: {
-        ...devices["Desktop Safari"],
-      },
+  },
+  {
+    name: "webkit",
+    testIgnore: /mobile\.spec\.ts/,
+    use: {
+      ...devices["Desktop Safari"],
     },
-    {
-      name: "mobile-chrome",
-      use: {
-        ...devices["Pixel 7"],
-      },
+  },
+  {
+    name: "mobile-chrome",
+    testMatch: /mobile\.spec\.ts/,
+    use: {
+      ...devices["Pixel 7"],
     },
-  ],
+  },
+],
 
   webServer: {
     command:
