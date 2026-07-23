@@ -1,17 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import {
   Building2,
-  Check,
-  Laptop,
-  Moon,
   Paintbrush,
   Settings,
-  Sun,
   UserRound,
 } from "lucide-react";
-import { useTheme } from "next-themes";
 import { toast } from "sonner";
 
 import { ActionButton } from "@/components/common/ActionButton";
@@ -19,51 +15,39 @@ import { PageContainer } from "@/components/common/PageContainer";
 import { SectionCard } from "@/components/common/SectionCard";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { DashboardMotion } from "@/components/modules/dashboard/DashboardMotion";
-import { cn } from "@/lib/utils";
 
-type ThemeOption = "light" | "dark" | "system";
-
-const themeOptions: {
-  value: ThemeOption;
-  label: string;
-  description: string;
-  icon: typeof Sun;
-}[] = [
+const ThemeSelector = dynamic(
+  () =>
+    import(
+      "@/components/modules/configuracoes/ThemeSelector"
+    ).then((module) => module.ThemeSelector),
   {
-    value: "light",
-    label: "Claro",
-    description: "Interface clara para ambientes iluminados.",
-    icon: Sun,
+    ssr: false,
+    loading: () => (
+      <div className="grid gap-4 md:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div
+            key={index}
+            className="min-h-36 animate-pulse rounded-2xl border border-border bg-accent"
+          />
+        ))}
+      </div>
+    ),
   },
-  {
-    value: "dark",
-    label: "Escuro",
-    description: "Reduz o brilho em ambientes com pouca luz.",
-    icon: Moon,
-  },
-  {
-    value: "system",
-    label: "Sistema",
-    description: "Segue automaticamente o tema do dispositivo.",
-    icon: Laptop,
-  },
-];
+);
 
 export default function ConfiguracoesPage() {
-  const { theme, setTheme } = useTheme();
-  const temaAtual = theme ?? "system";
-
-  const [nomeEmpresa, setNomeEmpresa] =
-    useState("Supermercado Sandro");
+  const [nomeEmpresa, setNomeEmpresa] = useState(
+    "Supermercado Sandro",
+  );
 
   const [nomeUsuario, setNomeUsuario] =
     useState("Admin");
 
-
   function salvarConfiguracoes() {
     toast.success("Configurações salvas", {
       description:
-        "As preferências visuais foram atualizadas.",
+        "As informações foram atualizadas no frontend.",
     });
   }
 
@@ -88,11 +72,13 @@ export default function ConfiguracoesPage() {
                 icon={Building2}
               >
                 <input
+                  type="text"
                   value={nomeEmpresa}
                   onChange={(event) =>
                     setNomeEmpresa(event.target.value)
                   }
                   className={inputClass}
+                  placeholder="Nome da empresa"
                 />
               </Field>
 
@@ -101,11 +87,13 @@ export default function ConfiguracoesPage() {
                 icon={UserRound}
               >
                 <input
+                  type="text"
                   value={nomeUsuario}
                   onChange={(event) =>
                     setNomeUsuario(event.target.value)
                   }
                   className={inputClass}
+                  placeholder="Nome do usuário"
                 />
               </Field>
 
@@ -155,63 +143,12 @@ export default function ConfiguracoesPage() {
           title="Aparência"
           description="Escolha como o Chronos Ponto será exibido."
           action={
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-yellow-700">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-yellow-700 dark:text-yellow-400">
               <Paintbrush className="h-5 w-5" />
             </div>
           }
         >
-
-            <div className="grid gap-4 md:grid-cols-3">
-              {themeOptions.map((option) => {
-                const Icon = option.icon;
-                const active = temaAtual === option.value;
-
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => {
-                      setTheme(option.value);
-
-                      toast.success(
-                        `Tema ${option.label.toLowerCase()} selecionado`,
-                      );
-                    }}
-                    className={cn(
-                      "relative flex min-h-36 flex-col items-start rounded-2xl border p-5 text-left transition",
-                      active
-                        ? "border-primary bg-primary/10 ring-2 ring-primary/15"
-                        : "border-border bg-card hover:bg-accent",
-                    )}
-                  >
-                    {active && (
-                      <span className="absolute right-4 top-4 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-black">
-                        <Check className="h-4 w-4" />
-                      </span>
-                    )}
-
-                    <div
-                      className={cn(
-                        "flex h-11 w-11 items-center justify-center rounded-xl",
-                        active
-                          ? "bg-primary text-black"
-                          : "bg-accent text-muted-foreground",
-                      )}
-                    >
-                      <Icon className="h-5 w-5" />
-                    </div>
-
-                    <p className="mt-4 text-sm font-semibold text-foreground">
-                      {option.label}
-                    </p>
-
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                      {option.description}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
+          <ThemeSelector />
         </SectionCard>
       </DashboardMotion>
     </PageContainer>
@@ -244,13 +181,15 @@ function Field({
   );
 }
 
+interface InfoRowProps {
+  label: string;
+  value: string;
+}
+
 function InfoRow({
   label,
   value,
-}: {
-  label: string;
-  value: string;
-}) {
+}: InfoRowProps) {
   return (
     <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-accent px-4 py-4">
       <span className="text-sm text-muted-foreground">
