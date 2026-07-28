@@ -1,15 +1,9 @@
 "use client";
 
-import {
-  useState,
-  type FormEvent,
-} from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  CalendarClock,
-} from "lucide-react";
+import { ArrowLeft, CalendarClock } from "lucide-react";
 import { toast } from "sonner";
 
 import { ActionButton } from "@/components/common/ActionButton";
@@ -22,47 +16,92 @@ import { useFuncionarios } from "@/hooks/useFuncionarios";
 import { useJornadas } from "@/hooks/useJornadas";
 
 import type { JornadaFormData } from "@/types/jornada";
+import type { Funcionario } from "@/types/funcionario";
 
 export default function JornadaFuncionarioPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
 
   const funcionarioId = Number(params.id);
+  const { buscarFuncionarioPorId } = useFuncionarios();
 
-  const { funcionarios } = useFuncionarios();
+  const { jornadas, adicionarJornada, editarJornada } = useJornadas();
 
-  const {
-    jornadas,
-    adicionarJornada,
-    editarJornada,
-  } = useJornadas();
+  const [funcionario, setFuncionario] = useState<Funcionario | null>(null);
 
-  const funcionario = funcionarios.find(
-    (item) => item.id === funcionarioId,
-  );
+  const [carregandoFuncionario, setCarregandoFuncionario] = useState(true);
+
+  const [erroFuncionario, setErroFuncionario] = useState(false);
+
+  useEffect(() => {
+  let ativo = true;
+
+  async function carregarFuncionario() {
+    if (!Number.isFinite(funcionarioId)) {
+      if (ativo) {
+        setErroFuncionario(true);
+        setCarregandoFuncionario(false);
+      }
+
+      return;
+    }
+
+    try {
+      setErroFuncionario(false);
+
+      const funcionarioEncontrado =
+        await buscarFuncionarioPorId(funcionarioId);
+
+      if (!ativo) {
+        return;
+      }
+
+      if (!funcionarioEncontrado) {
+        setErroFuncionario(true);
+        return;
+      }
+
+      setFuncionario(funcionarioEncontrado);
+    } catch (error) {
+      console.error(
+        "Erro ao carregar funcionário:",
+        error,
+      );
+
+      if (ativo) {
+        setErroFuncionario(true);
+      }
+    } finally {
+      if (ativo) {
+        setCarregandoFuncionario(false);
+      }
+    }
+  }
+
+  void carregarFuncionario();
+
+  return () => {
+    ativo = false;
+  };
+}, [funcionarioId, buscarFuncionarioPorId]);
 
   const jornadaExistente = jornadas.find(
     (item) => item.funcionarioId === funcionarioId,
   );
 
-  const [formData, setFormData] =
-    useState<JornadaFormData>(() => ({
-      funcionarioId,
-      entrada1: jornadaExistente?.entrada1 ?? "08:00",
-      saida1: jornadaExistente?.saida1 ?? "12:00",
-      entrada2: jornadaExistente?.entrada2 ?? "13:00",
-      saida2: jornadaExistente?.saida2 ?? "17:00",
-      toleranciaMinutos:
-        jornadaExistente?.toleranciaMinutos ?? 10,
-      percentualHoraExtra:
-        jornadaExistente?.percentualHoraExtra ?? 50,
-    }));
+  const [formData, setFormData] = useState<JornadaFormData>(() => ({
+    funcionarioId,
+    entrada1: jornadaExistente?.entrada1 ?? "08:00",
+    saida1: jornadaExistente?.saida1 ?? "12:00",
+    entrada2: jornadaExistente?.entrada2 ?? "13:00",
+    saida2: jornadaExistente?.saida2 ?? "17:00",
+    toleranciaMinutos: jornadaExistente?.toleranciaMinutos ?? 10,
+    percentualHoraExtra: jornadaExistente?.percentualHoraExtra ?? 50,
+  }));
 
   const [salvando, setSalvando] = useState(false);
 
-  function atualizarCampo<
-    K extends keyof JornadaFormData,
-  >(
+  function atualizarCampo<K extends keyof JornadaFormData>(
     campo: K,
     valor: JornadaFormData[K],
   ) {
@@ -72,45 +111,55 @@ export default function JornadaFuncionarioPage() {
     }));
   }
 
-  async function salvarJornada(
-    event: FormEvent<HTMLFormElement>,
-  ) {
+  async function salvarJornada(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     try {
       setSalvando(true);
 
       if (jornadaExistente) {
-        await editarJornada(
-          jornadaExistente.id,
-          formData,
-        );
+        await editarJornada(jornadaExistente.id, formData);
 
         toast.success("Jornada atualizada", {
-          description:
-            "Os horários foram atualizados com sucesso.",
+          description: "Os horários foram atualizados com sucesso.",
         });
       } else {
         await adicionarJornada(formData);
 
         toast.success("Jornada cadastrada", {
-          description:
-            "A jornada foi vinculada ao funcionário.",
+          description: "A jornada foi vinculada ao funcionário.",
         });
       }
 
       router.push(`/funcionarios/${funcionarioId}`);
     } catch {
       toast.error("Não foi possível salvar", {
-        description:
-          "Verifique os horários e tente novamente.",
+        description: "Verifique os horários e tente novamente.",
       });
     } finally {
       setSalvando(false);
     }
   }
 
-  if (!Number.isFinite(funcionarioId) || !funcionario) {
+  if (carregandoFuncionario) {
+    return (
+      <PageContainer>
+        <PageHeader
+          title="Carregando jornada"
+          description="Buscando os dados do funcionário."
+        />
+
+        <SectionCard>
+          <div className="space-y-4">
+            <div className="h-12 animate-pulse rounded-xl bg-slate-200 dark:bg-slate-800" />
+
+            <div className="h-48 animate-pulse rounded-xl bg-slate-200 dark:bg-slate-800" />
+          </div>
+        </SectionCard>
+      </PageContainer>
+    );
+  }
+  if (!Number.isFinite(funcionarioId) || erroFuncionario || !funcionario) {
     return (
       <PageContainer>
         <PageHeader
@@ -157,41 +206,30 @@ export default function JornadaFuncionarioPage() {
         title="Horários da jornada"
         description="Informe os horários previstos para o expediente."
       >
-        <form
-          className="space-y-6"
-          onSubmit={salvarJornada}
-        >
+        <form className="space-y-6" onSubmit={salvarJornada}>
           <div className="grid gap-4 sm:grid-cols-2">
             <CampoHora
               label="Entrada 1"
               value={formData.entrada1}
-              onChange={(valor) =>
-                atualizarCampo("entrada1", valor)
-              }
+              onChange={(valor) => atualizarCampo("entrada1", valor)}
             />
 
             <CampoHora
               label="Saída 1"
               value={formData.saida1}
-              onChange={(valor) =>
-                atualizarCampo("saida1", valor)
-              }
+              onChange={(valor) => atualizarCampo("saida1", valor)}
             />
 
             <CampoHora
               label="Entrada 2"
               value={formData.entrada2}
-              onChange={(valor) =>
-                atualizarCampo("entrada2", valor)
-              }
+              onChange={(valor) => atualizarCampo("entrada2", valor)}
             />
 
             <CampoHora
               label="Saída 2"
               value={formData.saida2}
-              onChange={(valor) =>
-                atualizarCampo("saida2", valor)
-              }
+              onChange={(valor) => atualizarCampo("saida2", valor)}
             />
           </div>
 
@@ -245,20 +283,13 @@ export default function JornadaFuncionarioPage() {
             <ActionButton
               type="button"
               variant="secondary"
-              onClick={() =>
-                router.push(
-                  `/funcionarios/${funcionario.id}`,
-                )
-              }
+              onClick={() => router.push(`/funcionarios/${funcionario.id}`)}
               disabled={salvando}
             >
               Cancelar
             </ActionButton>
 
-            <ActionButton
-              type="submit"
-              disabled={salvando}
-            >
+            <ActionButton type="submit" disabled={salvando}>
               {salvando
                 ? "Salvando..."
                 : jornadaExistente
@@ -278,23 +309,15 @@ interface CampoHoraProps {
   onChange: (valor: string) => void;
 }
 
-function CampoHora({
-  label,
-  value,
-  onChange,
-}: CampoHoraProps) {
+function CampoHora({ label, value, onChange }: CampoHoraProps) {
   return (
     <label className="block">
-      <span className="text-sm font-medium text-slate-700">
-        {label}
-      </span>
+      <span className="text-sm font-medium text-slate-700">{label}</span>
 
       <input
         type="time"
         value={value}
-        onChange={(event) =>
-          onChange(event.target.value)
-        }
+        onChange={(event) => onChange(event.target.value)}
         className={inputClass}
         required
       />

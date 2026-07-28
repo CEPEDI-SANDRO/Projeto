@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import type { RegistroPonto, RegistroPontoFormData } from "@/types/ponto";
 import {
   listarPontos,
@@ -17,20 +17,26 @@ export function usePontos() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function carregarPontos() {
-    setLoading(true);
-    setError(null);
+  const carregarPontos = useCallback(async () => {
     try {
+      setLoading(true);
+      setError(null);
+
       const dados = await listarPontos();
+
       setPontos(dados);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Erro ao carregar registros de ponto.";
-      setError(msg);
-      console.error(err);
+    } catch (error) {
+      console.error("Erro ao carregar registros de ponto:", error);
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível carregar os registros.",
+      );
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   async function adicionarPonto(data: RegistroPontoFormData) {
     setLoading(true);
@@ -52,7 +58,7 @@ export function usePontos() {
       const atualizado = await atualizarPonto(id, data);
       if (atualizado) {
         setPontos((prev) =>
-          prev.map((ponto) => (ponto.id === id ? atualizado : ponto))
+          prev.map((ponto) => (ponto.id === id ? atualizado : ponto)),
         );
       }
       return atualizado;

@@ -3,71 +3,83 @@ import type {
   RelatorioIndividual,
 } from "@/types/relatorio";
 
-import { funcionariosMock } from "@/mocks/funcionarios.mock";
-import { pontosMock } from "@/mocks/pontos.mock";
-import { relatorioGeralMock } from "@/mocks/relatorios.mock";
+import { API_URL } from "./api";
 
-export async function gerarRelatorioIndividual(
-  funcionarioId: number,
-  mes: number,
-  ano: number,
-): Promise<RelatorioIndividual> {
-  const funcionario = funcionariosMock.find(
-    (item) => item.id === funcionarioId,
-  );
+const BASE_URL = `${API_URL}/relatorio`;
 
-  if (!funcionario) {
-    throw new Error("Funcionário não encontrado.");
+async function lerErro(
+  response: Response,
+  mensagemPadrao: string,
+) {
+  const dados = await response
+    .json()
+    .catch(() => null);
+
+  if (
+    dados &&
+    typeof dados === "object" &&
+    "error" in dados &&
+    typeof dados.error === "string"
+  ) {
+    return dados.error;
   }
 
-  const registros = pontosMock.filter((registro) => {
-    if (registro.funcionarioId !== funcionarioId) {
-      return false;
-    }
-
-    const [registroAno, registroMes] = registro.data
-      .split("-")
-      .map(Number);
-
-    return registroMes === mes && registroAno === ano;
-  });
-
-  return {
-    funcionario,
-    mes,
-    ano,
-    totalHorasTrabalhadasMin: registros.reduce(
-      (total, registro) =>
-        total + registro.horasTrabalhadasMin,
-      0,
-    ),
-    totalHorasExtrasMin: registros.reduce(
-      (total, registro) =>
-        total + registro.horasExtrasMin,
-      0,
-    ),
-    totalFaltas: registros.filter(
-      (registro) => registro.status === "falta",
-    ).length,
-    totalParciais: registros.filter(
-      (registro) =>
-        registro.status === "parcial_manha" ||
-        registro.status === "parcial_tarde",
-    ).length,
-    totalPendentes: registros.filter(
-      (registro) => registro.status === "pendente",
-    ).length,
-    registros,
-  };
+  return mensagemPadrao;
 }
 
 export async function gerarRelatorioGeral(
   mes: number,
   ano: number,
 ): Promise<RelatorioGeral> {
-  return {
-    ...relatorioGeralMock,
-    mes,
-    ano,
-  };
+  const params = new URLSearchParams({
+    mes: String(mes),
+    ano: String(ano),
+  });
+
+  const response = await fetch(
+    `${BASE_URL}/geral?${params.toString()}`,
+    {
+      cache: "no-store",
+    },
+  );
+
+  if (!response.ok) {
+    const mensagem = await lerErro(
+      response,
+      "Não foi possível gerar o relatório geral.",
+    );
+
+    throw new Error(mensagem);
+  }
+
+  return response.json();
+}
+
+export async function gerarRelatorioIndividual(
+  funcionarioId: number,
+  mes: number,
+  ano: number,
+): Promise<RelatorioIndividual> {
+  const params = new URLSearchParams({
+    mes: String(mes),
+    ano: String(ano),
+  });
+
+  const response = await fetch(
+    `${BASE_URL}/individual/${funcionarioId}?${params.toString()}`,
+    {
+      cache: "no-store",
+    },
+  );
+
+  if (!response.ok) {
+    const mensagem = await lerErro(
+      response,
+      "Não foi possível gerar o relatório individual.",
+    );
+
+    throw new Error(mensagem);
+  }
+
+  return response.json();
 }

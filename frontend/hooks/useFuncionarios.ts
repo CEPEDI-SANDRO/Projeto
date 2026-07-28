@@ -1,88 +1,117 @@
 "use client";
 
-import { useState } from "react";
-import type { Funcionario, FuncionarioFormData } from "@/types/funcionario";
+import { useCallback, useState } from "react";
+
+import type {
+  Funcionario,
+  FuncionarioFormData,
+} from "@/types/funcionario";
+
 import {
   listarFuncionarios,
-  buscarFuncionarioPorId,
+  buscarFuncionarioPorId as buscarFuncionarioPorIdService,
   criarFuncionario,
   atualizarFuncionario,
   removerFuncionario,
 } from "@/services/funcionarios.service";
 
 export function useFuncionarios() {
-  const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
+  const [funcionarios, setFuncionarios] =
+    useState<Funcionario[]>([]);
+
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  async function carregarFuncionarios() {
-    setLoading(true);
-    setError(null);
-    try {
-      const dados = await listarFuncionarios();
-      setFuncionarios(dados);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Erro ao buscar funcionários.";
-      setError(msg);
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const [error, setError] = useState<string | null>(
+    null,
+  );
 
-  async function adicionarFuncionario(data: FuncionarioFormData) {
-    setLoading(true);
-    try {
-      const novo = await criarFuncionario(data);
-      setFuncionarios((prev) => [...prev, novo]);
-      return novo;
-    } catch (err) {
-      console.error(err);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
+  const carregarFuncionarios = useCallback(
+    async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const dados = await listarFuncionarios();
+
+        setFuncionarios(dados);
+      } catch (error) {
+        console.error(
+          "Erro ao carregar funcionários:",
+          error,
+        );
+
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Não foi possível carregar os funcionários.",
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
+
+  const buscarFuncionarioPorId = useCallback(
+    async (id: number) => {
+      return buscarFuncionarioPorIdService(id);
+    },
+    [],
+  );
+
+  async function adicionarFuncionario(
+    data: FuncionarioFormData,
+  ) {
+    const novo = await criarFuncionario(data);
+
+    setFuncionarios((estadoAtual) => [
+      ...estadoAtual,
+      novo,
+    ]);
+
+    return novo;
   }
 
   async function editarFuncionario(
     id: number,
-    data: Partial<FuncionarioFormData>
+    data: Partial<FuncionarioFormData>,
   ) {
-    setLoading(true);
-    try {
-      const atualizado = await atualizarFuncionario(id, data);
-      if (atualizado) {
-        setFuncionarios((prev) =>
-          prev.map((funcionario) =>
-            funcionario.id === id ? atualizado : funcionario
-          )
-        );
-      }
-      return atualizado;
-    } catch (err) {
-      console.error(err);
-      throw err;
-    } finally {
-      setLoading(false);
+    const atualizado = await atualizarFuncionario(
+      id,
+      data,
+    );
+
+    if (!atualizado) {
+      return null;
     }
+
+    setFuncionarios((estadoAtual) =>
+      estadoAtual.map((funcionario) =>
+        funcionario.id === id
+          ? atualizado
+          : funcionario,
+      ),
+    );
+
+    return atualizado;
   }
 
   async function excluirFuncionario(id: number) {
-    setLoading(true);
-    try {
-      const removido = await removerFuncionario(id);
-      if (removido) {
-        setFuncionarios((prev) =>
-          prev.filter((funcionario) => funcionario.id !== id)
-        );
-      }
-      return removido;
-    } catch (err) {
-      console.error(err);
-      throw err;
-    } finally {
-      setLoading(false);
+    const removido = await removerFuncionario(id);
+
+    if (!removido) {
+      throw new Error(
+        "Não foi possível excluir o funcionário.",
+      );
     }
+
+    setFuncionarios((estadoAtual) =>
+      estadoAtual.filter(
+        (funcionario) => funcionario.id !== id,
+      ),
+    );
+
+    return true;
   }
 
   return {

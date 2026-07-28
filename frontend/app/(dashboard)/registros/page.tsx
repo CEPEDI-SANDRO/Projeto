@@ -1,26 +1,36 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Clock3, Plus, SearchX } from "lucide-react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import {
+  Clock3,
+  FilterX,
+  Plus,
+  SearchX,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { ActionButton } from "@/components/common/ActionButton";
 import { ActionMenu } from "@/components/common/ActionMenu";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
-import { DataTable, type DataTableColumn } from "@/components/common/DataTable";
+import {
+  DataTable,
+  type DataTableColumn,
+} from "@/components/common/DataTable";
 import { Drawer } from "@/components/common/Drawer";
 import { Modal } from "@/components/common/Modal";
 import { PageContainer } from "@/components/common/PageContainer";
+import { PageSkeleton } from "@/components/common/PageSkeleton";
 import { SearchInput } from "@/components/common/SearchInput";
 import { SectionCard } from "@/components/common/SectionCard";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { PageSkeleton } from "@/components/common/PageSkeleton";
 import { RegistroDetalhes } from "@/components/modules/registro/RegistroDetalhes";
 import { RegistroForm } from "@/components/modules/registro/RegistroForm";
 
-import { usePontos } from "@/hooks/usePontos";
 import { useFuncionarios } from "@/hooks/useFuncionarios";
+import { usePontos } from "@/hooks/usePontos";
 
 import {
   formatarData,
@@ -28,9 +38,15 @@ import {
   formatarMinutosParaHoras,
 } from "@/lib/formatters";
 
-import type { RegistroPonto, RegistroPontoFormData } from "@/types/ponto";
+import type {
+  RegistroPonto,
+  RegistroPontoFormData,
+} from "@/types/ponto";
 
 export default function RegistrosPage() {
+  const searchParams = useSearchParams();
+  const statusUrl = searchParams.get("status");
+
   const {
     pontos,
     loading: loadingPontos,
@@ -47,42 +63,74 @@ export default function RegistrosPage() {
   } = useFuncionarios();
 
   const [search, setSearch] = useState("");
-  const [modalAberto, setModalAberto] = useState(false);
+  const [modalAberto, setModalAberto] =
+    useState(false);
 
-  const [registroSelecionado, setRegistroSelecionado] =
-    useState<RegistroPonto | null>(null);
+  const [
+    registroSelecionado,
+    setRegistroSelecionado,
+  ] = useState<RegistroPonto | null>(null);
 
-  const [registroEmEdicao, setRegistroEmEdicao] =
-    useState<RegistroPonto | null>(null);
+  const [
+    registroEmEdicao,
+    setRegistroEmEdicao,
+  ] = useState<RegistroPonto | null>(null);
 
-  const [registroParaExcluir, setRegistroParaExcluir] =
-    useState<RegistroPonto | null>(null);
+  const [
+    registroParaExcluir,
+    setRegistroParaExcluir,
+  ] = useState<RegistroPonto | null>(null);
 
-  const [excluindo, setExcluindo] = useState(false);
+  const [excluindo, setExcluindo] =
+    useState(false);
 
   useEffect(() => {
-    carregarPontos();
-    carregarFuncionarios();
-  }, []);
+    void carregarPontos();
+    void carregarFuncionarios();
+  }, [carregarPontos, carregarFuncionarios]);
+
+  const filtroPendenciasAtivo =
+    statusUrl === "pendente";
 
   const registrosFiltrados = useMemo(() => {
     const termo = search.trim().toLowerCase();
 
-    if (!termo) {
-      return pontos;
-    }
-
     return pontos.filter((ponto) => {
       const funcionario = funcionarios.find(
-        (item) => item.id === ponto.funcionarioId,
+        (item) =>
+          item.id === ponto.funcionarioId,
       );
 
-      return [funcionario?.nome, ponto.data, ponto.status, ponto.observacao]
-        .join(" ")
-        .toLowerCase()
-        .includes(termo);
+      const correspondeBusca =
+        !termo ||
+        [
+          funcionario?.nome,
+          ponto.data,
+          ponto.status,
+          ponto.observacao,
+        ]
+          .join(" ")
+          .toLowerCase()
+          .includes(termo);
+
+      const correspondeStatus =
+        !statusUrl ||
+        (statusUrl === "pendente"
+          ? [
+              "pendente",
+              "parcial_manha",
+              "parcial_tarde",
+            ].includes(ponto.status)
+          : ponto.status === statusUrl);
+
+      return correspondeBusca && correspondeStatus;
     });
-  }, [pontos, funcionarios, search]);
+  }, [
+    pontos,
+    funcionarios,
+    search,
+    statusUrl,
+  ]);
 
   function abrirCadastro() {
     setRegistroSelecionado(null);
@@ -90,7 +138,9 @@ export default function RegistrosPage() {
     setModalAberto(true);
   }
 
-  function abrirEdicao(registro: RegistroPonto) {
+  function abrirEdicao(
+    registro: RegistroPonto,
+  ) {
     setRegistroSelecionado(null);
     setRegistroEmEdicao(registro);
     setModalAberto(true);
@@ -101,12 +151,16 @@ export default function RegistrosPage() {
     setRegistroEmEdicao(null);
   }
 
-  function abrirDetalhes(registro: RegistroPonto) {
+  function abrirDetalhes(
+    registro: RegistroPonto,
+  ) {
     setRegistroEmEdicao(null);
     setRegistroSelecionado(registro);
   }
 
-  function abrirConfirmacaoExclusao(registro: RegistroPonto) {
+  function abrirConfirmacaoExclusao(
+    registro: RegistroPonto,
+  ) {
     setRegistroSelecionado(null);
     setRegistroParaExcluir(registro);
   }
@@ -119,27 +173,41 @@ export default function RegistrosPage() {
     setRegistroParaExcluir(null);
   }
 
-  async function salvarRegistro(data: RegistroPontoFormData) {
+  async function salvarRegistro(
+    data: RegistroPontoFormData,
+  ) {
     try {
       if (registroEmEdicao) {
-        await editarPonto(registroEmEdicao.id, data);
+        await editarPonto(
+          registroEmEdicao.id,
+          data,
+        );
 
-        toast.success("Registro atualizado", {
-          description: "As marcações foram atualizadas com sucesso.",
-        });
+        toast.success(
+          "Registro atualizado",
+          {
+            description:
+              "As marcações foram atualizadas com sucesso.",
+          },
+        );
       } else {
         await adicionarPonto(data);
 
         toast.success("Registro criado", {
-          description: "As marcações foram adicionadas com sucesso.",
+          description:
+            "As marcações foram adicionadas com sucesso.",
         });
       }
 
       fecharFormulario();
     } catch {
-      toast.error("Não foi possível salvar", {
-        description: "Verifique os dados e tente novamente.",
-      });
+      toast.error(
+        "Não foi possível salvar",
+        {
+          description:
+            "Verifique os dados e tente novamente.",
+        },
+      );
     }
   }
 
@@ -151,83 +219,120 @@ export default function RegistrosPage() {
     try {
       setExcluindo(true);
 
-      await excluirPonto(registroParaExcluir.id);
+      await excluirPonto(
+        registroParaExcluir.id,
+      );
 
       setRegistroParaExcluir(null);
 
       toast.success("Registro excluído", {
-        description: "O registro de ponto foi removido com sucesso.",
+        description:
+          "O registro de ponto foi removido com sucesso.",
       });
     } catch {
-      toast.error("Não foi possível excluir", {
-        description: "Tente novamente em alguns instantes.",
-      });
+      toast.error(
+        "Não foi possível excluir",
+        {
+          description:
+            "Tente novamente em alguns instantes.",
+        },
+      );
     } finally {
       setExcluindo(false);
     }
   }
 
-  const columns: DataTableColumn<RegistroPonto>[] = [
-    {
-      header: "Funcionário",
-      render: (ponto) => {
-        const funcionario = funcionarios.find(
-          (item) => item.id === ponto.funcionarioId,
-        );
+  const columns: DataTableColumn<RegistroPonto>[] =
+    [
+      {
+        header: "Funcionário",
+        render: (ponto) => {
+          const funcionario =
+            funcionarios.find(
+              (item) =>
+                item.id ===
+                ponto.funcionarioId,
+            );
 
-        return (
-          <div>
-            <p className="font-semibold text-slate-900">
-              {funcionario?.nome ?? "Funcionário não encontrado"}
-            </p>
+          return (
+            <div>
+              <p className="font-semibold text-slate-900">
+                {funcionario?.nome ??
+                  "Funcionário não encontrado"}
+              </p>
 
-            <p className="text-xs text-slate-500">ID #{ponto.funcionarioId}</p>
-          </div>
-        );
+              <p className="text-xs text-slate-500">
+                ID #{ponto.funcionarioId}
+              </p>
+            </div>
+          );
+        },
       },
-    },
-    {
-      header: "Data",
-      render: (ponto) => formatarData(ponto.data),
-    },
-    {
-      header: "Entrada 1",
-      render: (ponto) => formatarHora(ponto.entrada1),
-    },
-    {
-      header: "Saída 1",
-      render: (ponto) => formatarHora(ponto.saida1),
-    },
-    {
-      header: "Entrada 2",
-      render: (ponto) => formatarHora(ponto.entrada2),
-    },
-    {
-      header: "Saída 2",
-      render: (ponto) => formatarHora(ponto.saida2),
-    },
-    {
-      header: "Horas",
-      render: (ponto) => formatarMinutosParaHoras(ponto.horasTrabalhadasMin),
-    },
-    {
-      header: "Status",
-      render: (ponto) => <StatusBadge status={ponto.status} />,
-    },
-    {
-      header: "Ações",
-      className: "text-right",
-      render: (registro) => (
-        <ActionMenu
-          onView={() => abrirDetalhes(registro)}
-          onEdit={() => abrirEdicao(registro)}
-          onDelete={() => abrirConfirmacaoExclusao(registro)}
-        />
-      ),
-    },
-  ];
+      {
+        header: "Data",
+        render: (ponto) =>
+          formatarData(ponto.data),
+      },
+      {
+        header: "Entrada 1",
+        render: (ponto) =>
+          formatarHora(ponto.entrada1),
+      },
+      {
+        header: "Saída 1",
+        render: (ponto) =>
+          formatarHora(ponto.saida1),
+      },
+      {
+        header: "Entrada 2",
+        render: (ponto) =>
+          formatarHora(ponto.entrada2),
+      },
+      {
+        header: "Saída 2",
+        render: (ponto) =>
+          formatarHora(ponto.saida2),
+      },
+      {
+        header: "Horas",
+        render: (ponto) =>
+          formatarMinutosParaHoras(
+            ponto.horasTrabalhadasMin,
+          ),
+      },
+      {
+        header: "Status",
+        render: (ponto) => (
+          <StatusBadge
+            status={ponto.status}
+          />
+        ),
+      },
+      {
+        header: "Ações",
+        className: "text-right",
+        render: (registro) => (
+          <ActionMenu
+            onView={() =>
+              abrirDetalhes(registro)
+            }
+            onEdit={() =>
+              abrirEdicao(registro)
+            }
+            onDelete={() =>
+              abrirConfirmacaoExclusao(
+                registro,
+              )
+            }
+          />
+        ),
+      },
+    ];
 
-  if (loadingPontos && pontos.length === 0) {
+  if (
+    loadingPontos &&
+    pontos.length === 0
+  ) {
     return <PageSkeleton />;
   }
 
@@ -237,7 +342,9 @@ export default function RegistrosPage() {
         title="Registros de ponto"
         description="Acompanhe as marcações diárias dos funcionários."
         action={
-          <ActionButton onClick={abrirCadastro}>
+          <ActionButton
+            onClick={abrirCadastro}
+          >
             <Plus className="h-4 w-4" />
             Novo registro
           </ActionButton>
@@ -246,14 +353,49 @@ export default function RegistrosPage() {
 
       {errorPontos && (
         <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          <p className="font-semibold">Erro ao carregar registros de ponto</p>
+          <p className="font-semibold">
+            Erro ao carregar registros de
+            ponto
+          </p>
+
           <p>{errorPontos}</p>
         </div>
       )}
 
+      {filtroPendenciasAtivo && (
+        <div className="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-amber-900">
+              Filtro de pendências ativo
+            </p>
+
+            <p className="mt-0.5 text-xs text-amber-700">
+              Exibindo registros pendentes
+              ou parciais.
+            </p>
+          </div>
+
+          <Link
+            href="/registros"
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-amber-300 bg-white px-3 text-xs font-semibold text-amber-800 transition hover:bg-amber-100"
+          >
+            <FilterX className="h-4 w-4" />
+            Limpar filtro
+          </Link>
+        </div>
+      )}
+
       <SectionCard
-        title="Marcações registradas"
-        description="Consulte entradas, saídas, horas trabalhadas e status."
+        title={
+          filtroPendenciasAtivo
+            ? "Registros pendentes"
+            : "Marcações registradas"
+        }
+        description={
+          filtroPendenciasAtivo
+            ? "Registros que precisam de conferência ou conclusão."
+            : "Consulte entradas, saídas, horas trabalhadas e status."
+        }
         action={
           <SearchInput
             value={search}
@@ -265,19 +407,38 @@ export default function RegistrosPage() {
         <DataTable
           data={registrosFiltrados}
           columns={columns}
-          emptyIcon={search ? SearchX : Clock3}
-          emptyVariant={search ? "search" : "default"}
+          emptyIcon={
+            search
+              ? SearchX
+              : filtroPendenciasAtivo
+                ? FilterX
+                : Clock3
+          }
+          emptyVariant={
+            search || filtroPendenciasAtivo
+              ? "search"
+              : "default"
+          }
           emptyTitle={
-            search ? "Nenhum registro encontrado" : "Nenhum registro de ponto"
+            search
+              ? "Nenhum registro encontrado"
+              : filtroPendenciasAtivo
+                ? "Nenhuma pendência encontrada"
+                : "Nenhum registro de ponto"
           }
           emptyDescription={
             search
               ? "Tente pesquisar por outro funcionário, data ou status."
-              : "Ainda não existem marcações de ponto cadastradas."
+              : filtroPendenciasAtivo
+                ? "Todos os registros estão completos no momento."
+                : "Ainda não existem marcações de ponto cadastradas."
           }
           emptyAction={
-            !search ? (
-              <ActionButton onClick={abrirCadastro}>
+            !search &&
+            !filtroPendenciasAtivo ? (
+              <ActionButton
+                onClick={abrirCadastro}
+              >
                 <Plus className="h-4 w-4" />
                 Novo registro
               </ActionButton>
@@ -301,7 +462,9 @@ export default function RegistrosPage() {
         onClose={fecharFormulario}
       >
         <RegistroForm
-          key={registroEmEdicao?.id ?? "novo"}
+          key={
+            registroEmEdicao?.id ?? "novo"
+          }
           initialData={registroEmEdicao}
           funcionarios={funcionarios}
           onCancel={fecharFormulario}
@@ -310,16 +473,22 @@ export default function RegistrosPage() {
       </Modal>
 
       <Drawer
-        open={Boolean(registroSelecionado)}
+        open={Boolean(
+          registroSelecionado,
+        )}
         title="Detalhes do registro"
         description="Marcações e informações do ponto."
-        onClose={() => setRegistroSelecionado(null)}
+        onClose={() =>
+          setRegistroSelecionado(null)
+        }
         footer={
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <ActionButton
               type="button"
               variant="secondary"
-              onClick={() => setRegistroSelecionado(null)}
+              onClick={() =>
+                setRegistroSelecionado(null)
+              }
             >
               Fechar
             </ActionButton>
@@ -328,7 +497,9 @@ export default function RegistrosPage() {
               type="button"
               onClick={() => {
                 if (registroSelecionado) {
-                  abrirEdicao(registroSelecionado);
+                  abrirEdicao(
+                    registroSelecionado,
+                  );
                 }
               }}
             >
@@ -339,14 +510,18 @@ export default function RegistrosPage() {
       >
         {registroSelecionado && (
           <RegistroDetalhes
-            registro={registroSelecionado}
+            registro={
+              registroSelecionado
+            }
             funcionarios={funcionarios}
           />
         )}
       </Drawer>
 
       <ConfirmDialog
-        open={Boolean(registroParaExcluir)}
+        open={Boolean(
+          registroParaExcluir,
+        )}
         title="Excluir registro"
         description={
           registroParaExcluir

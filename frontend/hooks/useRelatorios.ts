@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 import {
   gerarRelatorioGeral,
@@ -13,57 +13,100 @@ import type {
 } from "@/types/relatorio";
 
 export function useRelatorios() {
-  const [relatorioIndividual, setRelatorioIndividual] =
-    useState<RelatorioIndividual | null>(null);
+  const [
+    relatorioIndividual,
+    setRelatorioIndividual,
+  ] = useState<RelatorioIndividual | null>(
+    null,
+  );
 
-  const [relatorioGeral, setRelatorioGeral] =
-    useState<RelatorioGeral | null>(null);
+  const [
+    relatorioGeral,
+    setRelatorioGeral,
+  ] = useState<RelatorioGeral | null>(null);
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] =
+    useState(false);
 
-  async function buscarRelatorioIndividual(
-    funcionarioId: number,
-    mes: number,
-    ano: number,
-  ) {
-    try {
-      setLoading(true);
+  const [error, setError] =
+    useState<string | null>(null);
 
-      const data = await gerarRelatorioIndividual(
-        funcionarioId,
-        mes,
-        ano,
-      );
+  const buscarRelatorioIndividual =
+    useCallback(
+      async (
+        funcionarioId: number,
+        mes: number,
+        ano: number,
+      ) => {
+        try {
+          setLoading(true);
+          setError(null);
 
-      setRelatorioIndividual(data);
+          const data =
+            await gerarRelatorioIndividual(
+              funcionarioId,
+              mes,
+              ano,
+            );
 
-      return data;
-    } finally {
-      setLoading(false);
-    }
-  }
+          setRelatorioIndividual(data);
 
-  async function buscarRelatorioGeral(
-    mes: number,
-    ano: number,
-  ) {
-    try {
-      setLoading(true);
+          return data;
+        } catch (error) {
+          const mensagem =
+            error instanceof Error
+              ? error.message
+              : "Erro ao gerar relatório individual.";
 
-      const data = await gerarRelatorioGeral(mes, ano);
+          setError(mensagem);
+          setRelatorioIndividual(null);
 
-      setRelatorioGeral(data);
+          throw error;
+        } finally {
+          setLoading(false);
+        }
+      },
+      [],
+    );
 
-      return data;
-    } finally {
-      setLoading(false);
-    }
-  }
+  const buscarRelatorioGeral =
+    useCallback(
+      async (mes: number, ano: number) => {
+        try {
+          setLoading(true);
+          setError(null);
+
+          const data =
+            await gerarRelatorioGeral(
+              mes,
+              ano,
+            );
+
+          setRelatorioGeral(data);
+
+          return data;
+        } catch (error) {
+          const mensagem =
+            error instanceof Error
+              ? error.message
+              : "Erro ao gerar relatório geral.";
+
+          setError(mensagem);
+          setRelatorioGeral(null);
+
+          throw error;
+        } finally {
+          setLoading(false);
+        }
+      },
+      [],
+    );
 
   return {
     relatorioIndividual,
     relatorioGeral,
     loading,
+    error,
     buscarRelatorioIndividual,
     buscarRelatorioGeral,
   };

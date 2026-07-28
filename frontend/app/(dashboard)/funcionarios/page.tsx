@@ -38,8 +38,8 @@ export default function FuncionariosPage() {
   const [excluindo, setExcluindo] = useState(false);
 
   useEffect(() => {
-    carregarFuncionarios();
-  }, []);
+  void carregarFuncionarios();
+}, [carregarFuncionarios]);
 
   const funcionariosFiltrados = useMemo(() => {
     const termo = search.trim().toLowerCase();

@@ -6,7 +6,7 @@ const pontoRoutes = require('./src/routes/pontoRoutes');
 const funcionarioRoutes = require('./src/routes/funcionarioRoutes');
 const dashboardRoutes = require('./src/routes/dashboardRoutes');
 const authRoutes = require('./src/routes/authRoutes');
-
+const relatorioRoutes = require("./src/routes/relatorioRoutes");
 // Inicializa a aplicação Express criando o objeto do nosso servidor
 const app = express();
 
@@ -34,6 +34,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/ponto', pontoRoutes);
 app.use('/api/funcionario', funcionarioRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use("/api/relatorio", relatorioRoutes);
 
 // ROTA DE TESTE (RAIZ): Uma rota simples apenas para checar se o servidor está online acessando pelo navegador
 app.get('/', (req, res) => {

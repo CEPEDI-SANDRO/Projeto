@@ -20,19 +20,23 @@ export async function listarFuncionarios(): Promise<Funcionario[]> {
 }
 
 export async function buscarFuncionarioPorId(
-  id: number
+  id: number,
 ): Promise<Funcionario | undefined> {
-  try {
-    const res = await fetch(`${BASE_URL}/${id}`);
-    if (!res.ok) {
-      if (res.status === 404) return undefined;
-      throw new Error(`Erro ao buscar funcionário ID ${id}.`);
-    }
-    return await res.json();
-  } catch (error) {
-    console.error("Erro no service buscarFuncionarioPorId:", error);
+  const res = await fetch(`${BASE_URL}/${id}`, {
+    cache: "no-store",
+  });
+
+  if (res.status === 404) {
     return undefined;
   }
+
+  if (!res.ok) {
+    throw new Error(
+      `Erro ao buscar funcionário ID ${id}. Status: ${res.status}`,
+    );
+  }
+
+  return res.json();
 }
 
 export async function criarFuncionario(

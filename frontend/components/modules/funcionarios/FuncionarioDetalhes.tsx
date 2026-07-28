@@ -93,7 +93,11 @@ export function FuncionarioDetalhes({
           <DetailRow
             icon={CalendarDays}
             label="Cadastrado em"
-            value={formatarData(funcionario.criadoEm.split("T")[0])}
+            value={
+  funcionario.criadoEm
+    ? formatarData(funcionario.criadoEm.split("T")[0])
+    : "Não informado"
+}
           />
         </div>
       </section>

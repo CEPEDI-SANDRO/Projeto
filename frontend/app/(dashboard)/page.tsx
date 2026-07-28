@@ -9,6 +9,7 @@ import {
   UserX,
   Users,
 } from "lucide-react";
+import Link from "next/link";
 
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatCard } from "@/components/common/StatCard";
@@ -143,12 +144,12 @@ export default function DashboardPage() {
             title="Pendências recentes"
             description="Registros incompletos ou parciais."
             action={
-              <button
-                type="button"
+              <Link
+                href="/registros?status=pendente"
                 className="text-xs font-semibold text-yellow-700 transition hover:text-yellow-800"
               >
                 Ver todas
-              </button>
+              </Link>
             }
           >
             <div className="space-y-3">
