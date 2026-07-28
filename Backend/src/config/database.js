@@ -175,6 +175,68 @@ db.serialize(() => {
     });
 });
 
+const sqlTabelaConfiguracoes = `
+  CREATE TABLE IF NOT EXISTS configuracoes (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    nomeEmpresa TEXT NOT NULL,
+    nomeUsuario TEXT NOT NULL,
+    atualizadoEm TEXT NOT NULL
+  )
+`;
+
+db.run(sqlTabelaConfiguracoes, (err) => {
+  if (err) {
+    console.error(
+      "Erro ao criar tabela configuracoes:",
+      err.message,
+    );
+
+    return;
+  }
+
+  db.get(
+    "SELECT id FROM configuracoes WHERE id = 1",
+    [],
+    (err, configuracao) => {
+      if (err) {
+        console.error(
+          "Erro ao verificar configurações:",
+          err.message,
+        );
+
+        return;
+      }
+
+      if (!configuracao) {
+        db.run(
+          `
+            INSERT INTO configuracoes (
+              id,
+              nomeEmpresa,
+              nomeUsuario,
+              atualizadoEm
+            )
+            VALUES (1, ?, ?, ?)
+          `,
+          [
+            "Supermercado Sandro",
+            "Administrador",
+            new Date().toISOString(),
+          ],
+          (err) => {
+            if (err) {
+              console.error(
+                "Erro ao criar configuração inicial:",
+                err.message,
+              );
+            }
+          },
+        );
+      }
+    },
+  );
+});
+
 // EXPORTAÇÃO DO SINGLETON: Exporta o objeto 'db' contendo a conexão já aberta e as tabelas estruturadas.
 // Como o Node.js faz cache de arquivos exportados, qualquer outro arquivo que der 'require' neste código receberá exatamente essa mesma instância.
 module.exports = db;

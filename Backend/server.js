@@ -7,6 +7,8 @@ const funcionarioRoutes = require('./src/routes/funcionarioRoutes');
 const dashboardRoutes = require('./src/routes/dashboardRoutes');
 const authRoutes = require('./src/routes/authRoutes');
 const relatorioRoutes = require("./src/routes/relatorioRoutes");
+const configuracaoRoutes = require("./src/routes/configuracaoRoutes");
+const notificacaoRoutes = require("./src/routes/notificacaoRoutes");
 // Inicializa a aplicação Express criando o objeto do nosso servidor
 const app = express();
 
@@ -15,7 +17,7 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    
+
     // Trata requisições de preflight do CORS
     if (req.method === 'OPTIONS') {
         return res.sendStatus(200);
@@ -35,6 +37,8 @@ app.use('/api/ponto', pontoRoutes);
 app.use('/api/funcionario', funcionarioRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use("/api/relatorio", relatorioRoutes);
+app.use("/api/configuracoes", configuracaoRoutes);
+app.use("/api/notificacao", notificacaoRoutes);
 
 // ROTA DE TESTE (RAIZ): Uma rota simples apenas para checar se o servidor está online acessando pelo navegador
 app.get('/', (req, res) => {

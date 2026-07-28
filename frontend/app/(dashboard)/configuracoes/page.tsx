@@ -16,6 +16,8 @@ import { SectionCard } from "@/components/common/SectionCard";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { DashboardMotion } from "@/components/modules/dashboard/DashboardMotion";
 
+import { useConfiguracoesContext } from "@/components/providers/ConfiguracoesProvider";
+
 const ThemeSelector = dynamic(
   () =>
     import(
@@ -37,18 +39,62 @@ const ThemeSelector = dynamic(
 );
 
 export default function ConfiguracoesPage() {
-  const [nomeEmpresa, setNomeEmpresa] = useState(
-    "Supermercado Sandro",
-  );
+  const {
+    configuracao,
+    loading,
+    salvando,
+    error,
+    salvarConfiguracoes: salvarConfiguracoesApi,
+  } = useConfiguracoesContext();
 
-  const [nomeUsuario, setNomeUsuario] =
-    useState("Admin");
+  const [nomeEmpresaEditado, setNomeEmpresaEditado] =
+    useState<string | null>(null);
 
-  function salvarConfiguracoes() {
-    toast.success("Configurações salvas", {
-      description:
-        "As informações foram atualizadas no frontend.",
-    });
+  const [nomeUsuarioEditado, setNomeUsuarioEditado] =
+    useState<string | null>(null);
+
+  const nomeEmpresa =
+    nomeEmpresaEditado ??
+    configuracao?.nomeEmpresa ??
+    "";
+
+  const nomeUsuario =
+    nomeUsuarioEditado ??
+    configuracao?.nomeUsuario ??
+    "";
+
+  async function salvarConfiguracoes() {
+    const empresa = nomeEmpresa.trim();
+    const usuario = nomeUsuario.trim();
+
+    if (!empresa || !usuario) {
+      toast.error("Preencha os campos", {
+        description:
+          "Nome da empresa e nome do usuário são obrigatórios.",
+      });
+
+      return;
+    }
+
+    try {
+      await salvarConfiguracoesApi({
+        nomeEmpresa: empresa,
+        nomeUsuario: usuario,
+      });
+
+      setNomeEmpresaEditado(null);
+      setNomeUsuarioEditado(null);
+
+      toast.success("Configurações salvas", {
+        description:
+          "As informações foram atualizadas com sucesso.",
+      });
+    } catch {
+      toast.error("Não foi possível salvar", {
+        description:
+          "Verifique os dados e tente novamente.",
+      });
+    }
   }
 
   return (
@@ -59,6 +105,16 @@ export default function ConfiguracoesPage() {
           description="Personalize a empresa, o usuário e a aparência do sistema."
         />
       </DashboardMotion>
+
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
+          <p className="font-semibold">
+            Não foi possível carregar as configurações
+          </p>
+
+          <p>{error}</p>
+        </div>
+      )}
 
       <DashboardMotion delay={0.05}>
         <div className="grid gap-4 xl:grid-cols-[1fr_0.8fr]">
@@ -75,10 +131,17 @@ export default function ConfiguracoesPage() {
                   type="text"
                   value={nomeEmpresa}
                   onChange={(event) =>
-                    setNomeEmpresa(event.target.value)
+                    setNomeEmpresaEditado(
+                      event.target.value,
+                    )
                   }
                   className={inputClass}
-                  placeholder="Nome da empresa"
+                  placeholder={
+                    loading
+                      ? "Carregando..."
+                      : "Nome da empresa"
+                  }
+                  disabled={loading || salvando}
                 />
               </Field>
 
@@ -90,20 +153,38 @@ export default function ConfiguracoesPage() {
                   type="text"
                   value={nomeUsuario}
                   onChange={(event) =>
-                    setNomeUsuario(event.target.value)
+                    setNomeUsuarioEditado(
+                      event.target.value,
+                    )
                   }
                   className={inputClass}
-                  placeholder="Nome do usuário"
+                  placeholder={
+                    loading
+                      ? "Carregando..."
+                      : "Nome do usuário"
+                  }
+                  disabled={loading || salvando}
                 />
               </Field>
 
               <div className="flex justify-end border-t border-border pt-5">
                 <ActionButton
                   type="button"
-                  onClick={salvarConfiguracoes}
+                  onClick={() => {
+                    void salvarConfiguracoes();
+                  }}
+                  disabled={
+                    loading ||
+                    salvando ||
+                    !nomeEmpresa.trim() ||
+                    !nomeUsuario.trim()
+                  }
                 >
                   <Settings className="h-4 w-4" />
-                  Salvar configurações
+
+                  {salvando
+                    ? "Salvando..."
+                    : "Salvar configurações"}
                 </ActionButton>
               </div>
             </div>
@@ -121,7 +202,18 @@ export default function ConfiguracoesPage() {
 
               <InfoRow
                 label="Empresa"
-                value="Supermercado Sandro"
+                value={
+                  nomeEmpresa ||
+                  "Não informado"
+                }
+              />
+
+              <InfoRow
+                label="Usuário"
+                value={
+                  nomeUsuario ||
+                  "Não informado"
+                }
               />
 
               <InfoRow
@@ -156,7 +248,7 @@ export default function ConfiguracoesPage() {
 }
 
 const inputClass =
-  "mt-1 h-11 w-full rounded-xl border border-border bg-card px-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20";
+  "mt-1 h-11 w-full rounded-xl border border-border bg-card px-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60";
 
 interface FieldProps {
   label: string;
