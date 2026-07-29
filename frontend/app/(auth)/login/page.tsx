@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, LockKeyhole, LogIn, UserRound } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { toast } from "sonner";
 
 import { ActionButton } from "@/components/common/ActionButton";
@@ -13,13 +13,19 @@ import { useAuthContext } from "@/components/providers/AuthProvider";
 export default function LoginPage() {
   const router = useRouter();
 
-  const { registrarSessao } = useAuthContext();
+  const { registrarSessao, autenticado, carregando } = useAuthContext();
 
   const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
   const [lembrar, setLembrar] = useState(false);
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [entrando, setEntrando] = useState(false);
+
+  useEffect(() => {
+    if (!carregando && autenticado) {
+      router.replace("/");
+    }
+  }, [autenticado, carregando, router]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

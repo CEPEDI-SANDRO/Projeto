@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -15,6 +16,7 @@ interface AuthContextValue {
   usuario: UsuarioAutenticado | null;
   token: string | null;
   autenticado: boolean;
+  carregando: boolean;
   registrarSessao: (
     usuario: UsuarioAutenticado,
     token: string,
@@ -29,48 +31,37 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-function lerUsuarioArmazenado(): UsuarioAutenticado | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  const usuarioSalvo =
-    localStorage.getItem("chronos_user");
-
-  if (!usuarioSalvo) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(
-      usuarioSalvo,
-    ) as UsuarioAutenticado;
-  } catch {
-    localStorage.removeItem("chronos_user");
-    return null;
-  }
-}
-
-function lerTokenArmazenado(): string | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  return localStorage.getItem("chronos_token");
-}
-
 export function AuthProvider({
   children,
 }: AuthProviderProps) {
   const [usuario, setUsuario] =
-    useState<UsuarioAutenticado | null>(
-      lerUsuarioArmazenado,
-    );
+    useState<UsuarioAutenticado | null>(null);
 
   const [token, setToken] =
-    useState<string | null>(
-      lerTokenArmazenado,
-    );
+    useState<string | null>(null);
+
+  const [carregando, setCarregando] = useState(true);
+
+  useEffect(() => {
+    try {
+      const usuarioSalvo =
+        localStorage.getItem("chronos_user");
+      const tokenSalvo =
+        localStorage.getItem("chronos_token");
+
+      if (usuarioSalvo && tokenSalvo) {
+        setUsuario(
+          JSON.parse(usuarioSalvo) as UsuarioAutenticado,
+        );
+        setToken(tokenSalvo);
+      }
+    } catch {
+      localStorage.removeItem("chronos_user");
+      localStorage.removeItem("chronos_token");
+    } finally {
+      setCarregando(false);
+    }
+  }, []);
 
   const registrarSessao = useCallback(
     (
@@ -105,15 +96,15 @@ export function AuthProvider({
     () => ({
       usuario,
       token,
-      autenticado: Boolean(
-        usuario && token,
-      ),
+      autenticado: Boolean(usuario && token),
+      carregando,
       registrarSessao,
       encerrarSessao,
     }),
     [
       usuario,
       token,
+      carregando,
       registrarSessao,
       encerrarSessao,
     ],

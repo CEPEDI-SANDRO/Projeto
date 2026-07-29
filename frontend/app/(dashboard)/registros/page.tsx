@@ -4,10 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
+  CalendarDays,
   Clock3,
   FilterX,
   Plus,
   SearchX,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -43,6 +45,9 @@ import type {
   RegistroPontoFormData,
 } from "@/types/ponto";
 
+const selectClass =
+  "h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20";
+
 export default function RegistrosPage() {
   const searchParams = useSearchParams();
   const statusUrl = searchParams.get("status");
@@ -63,6 +68,9 @@ export default function RegistrosPage() {
   } = useFuncionarios();
 
   const [search, setSearch] = useState("");
+  const [filtroFuncionarioId, setFiltroFuncionarioId] = useState(0);
+  const [filtroData, setFiltroData] = useState("");
+
   const [modalAberto, setModalAberto] =
     useState(false);
 
@@ -92,6 +100,15 @@ export default function RegistrosPage() {
   const filtroPendenciasAtivo =
     statusUrl === "pendente";
 
+  const filtrosAtivos =
+    Boolean(filtroFuncionarioId) || Boolean(filtroData);
+
+  function limparFiltros() {
+    setFiltroFuncionarioId(0);
+    setFiltroData("");
+    setSearch("");
+  }
+
   const registrosFiltrados = useMemo(() => {
     const termo = search.trim().toLowerCase();
 
@@ -117,19 +134,33 @@ export default function RegistrosPage() {
         !statusUrl ||
         (statusUrl === "pendente"
           ? [
-              "pendente",
-              "parcial_manha",
-              "parcial_tarde",
-            ].includes(ponto.status)
+            "pendente",
+            "parcial_manha",
+            "parcial_tarde",
+          ].includes(ponto.status)
           : ponto.status === statusUrl);
 
-      return correspondeBusca && correspondeStatus;
+      const correspondeFuncionario =
+        !filtroFuncionarioId ||
+        ponto.funcionarioId === filtroFuncionarioId;
+
+      const correspondeData =
+        !filtroData || ponto.data === filtroData;
+
+      return (
+        correspondeBusca &&
+        correspondeStatus &&
+        correspondeFuncionario &&
+        correspondeData
+      );
     });
   }, [
     pontos,
     funcionarios,
     search,
     statusUrl,
+    filtroFuncionarioId,
+    filtroData,
   ]);
 
   function abrirCadastro() {
@@ -397,45 +428,106 @@ export default function RegistrosPage() {
             : "Consulte entradas, saídas, horas trabalhadas e status."
         }
         action={
-          <SearchInput
-            value={search}
-            onChange={setSearch}
-            placeholder="Buscar por funcionário, data ou status..."
-          />
+          <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap">
+            {/* Filtro por funcionário */}
+            <select
+              value={filtroFuncionarioId}
+              onChange={(e) =>
+                setFiltroFuncionarioId(
+                  Number(e.target.value),
+                )
+              }
+              className={selectClass}
+              aria-label="Filtrar por funcionário"
+            >
+              <option value={0}>
+                Todos os funcionários
+              </option>
+              {funcionarios.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.nome}
+                </option>
+              ))}
+            </select>
+
+            {/* Filtro por data */}
+            <div className="relative flex items-center">
+              <CalendarDays className="pointer-events-none absolute left-3 h-4 w-4 text-slate-400" />
+              <input
+                type="date"
+                value={filtroData}
+                onChange={(e) =>
+                  setFiltroData(e.target.value)
+                }
+                className={`${selectClass} pl-9`}
+                aria-label="Filtrar por data"
+              />
+              {filtroData && (
+                <button
+                  type="button"
+                  onClick={() => setFiltroData("")}
+                  className="absolute right-2 flex h-5 w-5 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                  aria-label="Limpar filtro de data"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+
+            {/* Busca por texto */}
+            <SearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder="Buscar por funcionário, status..."
+            />
+
+            {/* Botão limpar filtros */}
+            {filtrosAtivos && (
+              <button
+                type="button"
+                onClick={limparFiltros}
+                className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+              >
+                <FilterX className="h-4 w-4" />
+                Limpar
+              </button>
+            )}
+          </div>
         }
       >
         <DataTable
           data={registrosFiltrados}
           columns={columns}
           emptyIcon={
-            search
+            search || filtrosAtivos
               ? SearchX
               : filtroPendenciasAtivo
                 ? FilterX
                 : Clock3
           }
           emptyVariant={
-            search || filtroPendenciasAtivo
+            search || filtroPendenciasAtivo || filtrosAtivos
               ? "search"
               : "default"
           }
           emptyTitle={
-            search
+            search || filtrosAtivos
               ? "Nenhum registro encontrado"
               : filtroPendenciasAtivo
                 ? "Nenhuma pendência encontrada"
                 : "Nenhum registro de ponto"
           }
           emptyDescription={
-            search
-              ? "Tente pesquisar por outro funcionário, data ou status."
+            search || filtrosAtivos
+              ? "Tente pesquisar com outros filtros."
               : filtroPendenciasAtivo
                 ? "Todos os registros estão completos no momento."
                 : "Ainda não existem marcações de ponto cadastradas."
           }
           emptyAction={
             !search &&
-            !filtroPendenciasAtivo ? (
+              !filtroPendenciasAtivo &&
+              !filtrosAtivos ? (
               <ActionButton
                 onClick={abrirCadastro}
               >
@@ -526,8 +618,8 @@ export default function RegistrosPage() {
         description={
           registroParaExcluir
             ? `Tem certeza de que deseja excluir o registro do dia ${formatarData(
-                registroParaExcluir.data,
-              )}? Esta ação não poderá ser desfeita.`
+              registroParaExcluir.data,
+            )}? Esta ação não poderá ser desfeita.`
             : ""
         }
         confirmLabel="Excluir registro"

@@ -106,7 +106,10 @@ export function Header({ onOpenMenu }: HeaderProps) {
       description: "Você saiu do Chronos Ponto.",
     });
 
-    router.replace("/login");
+    // Pequeno delay para garantir que o toast apareça antes da navegação
+    setTimeout(() => {
+      router.replace("/login");
+    }, 100);
   }
 
   return (
