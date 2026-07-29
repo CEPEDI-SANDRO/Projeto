@@ -34,7 +34,7 @@ test.describe("Exportação", () => {
     ).toBeDisabled();
   });
 
-  test("exporta relatório individual em CSV", async ({ page }) => {
+  test("exporta relatório individual em Excel", async ({ page }) => {
     await page
       .getByRole("button", {
         name: /Relatório individual/i,
@@ -44,12 +44,6 @@ test.describe("Exportação", () => {
     await page.getByLabel("Funcionário").selectOption({
       index: 1,
     });
-
-    await page
-      .getByRole("button", {
-        name: /CSV/i,
-      })
-      .click();
 
     await page
       .getByRole("button", {
@@ -64,12 +58,6 @@ test.describe("Exportação", () => {
   });
 
   test("exporta relatório geral em Excel", async ({ page }) => {
-    await page
-      .getByRole("button", {
-        name: /Excel/i,
-      })
-      .click();
-
     await page
       .getByRole("button", {
         name: "Exportar relatório",

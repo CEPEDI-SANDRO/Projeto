@@ -41,11 +41,27 @@ const determinarStatus = (e1, s1, e2, s2) => {
     return "falta";
 };
 
+// Função auxiliar para validar e formatar data YYYY-MM-DD
+const validarEFormatarData = (dataStr) => {
+    if (!dataStr || typeof dataStr !== 'string') return null;
+    const partes = dataStr.trim().split('-');
+    if (partes.length !== 3) return null;
+    const ano = Number(partes[0]);
+    const mes = Number(partes[1]);
+    const dia = Number(partes[2]);
+    if (isNaN(ano) || isNaN(mes) || isNaN(dia)) return null;
+    if (ano < 2000 || ano > 2100 || mes < 1 || mes > 12 || dia < 1 || dia > 31) return null;
+    return `${String(ano).padStart(4, '0')}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+};
+
 // FUNÇÃO PRINCIPAL: Registra ou atualiza o ponto do funcionário de forma inteligente (via batida de ponto)
 pontoController.registrarPonto = (req, res) => {
     const { funcionario_id } = req.body;
     const agora = new Date();
-    const dataAtual = agora.toISOString().split('T')[0];
+    const ano = agora.getFullYear();
+    const mes = String(agora.getMonth() + 1).padStart(2, '0');
+    const dia = String(agora.getDate()).padStart(2, '0');
+    const dataAtual = `${ano}-${mes}-${dia}`;
     const horaAtual = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
     if (!funcionario_id) {
@@ -163,6 +179,11 @@ pontoController.lancarManual = (req, res) => {
         return res.status(400).json({ error: "O ID do funcionário e a data são obrigatórios." });
     }
 
+    const dataValida = validarEFormatarData(data);
+    if (!dataValida) {
+        return res.status(400).json({ error: "A data informada é inválida ou possui ano fora do limite permitido (2000 a 2100)." });
+    }
+
     const minutosTrabalhados = calcularMinutosTrabalhados(entrada1, saida1, entrada2, saida2);
     const status = determinarStatus(entrada1, saida1, entrada2, saida2);
     const minutosExtras = minutosTrabalhados > 480 ? minutosTrabalhados - 480 : 0;
@@ -174,7 +195,7 @@ pontoController.lancarManual = (req, res) => {
 
     db.run(sql, [
         funcionarioId,
-        data,
+        dataValida,
         entrada1 || null,
         saida1 || null,
         entrada2 || null,
@@ -192,7 +213,7 @@ pontoController.lancarManual = (req, res) => {
         return res.status(201).json({
             id: this.lastID,
             funcionarioId: Number(funcionarioId),
-            data,
+            data: dataValida,
             entrada1,
             saida1,
             entrada2,
@@ -204,6 +225,7 @@ pontoController.lancarManual = (req, res) => {
         });
     });
 };
+
 
 // FUNÇÃO: Atualizar ponto existente
 pontoController.atualizar = (req, res) => {

@@ -5,6 +5,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
+import { toast } from "sonner";
 
 import { ActionButton } from "@/components/common/ActionButton";
 import { funcionariosMock } from "@/mocks/funcionarios.mock";
@@ -22,6 +23,15 @@ interface RegistroFormProps {
   onSubmit: (
     data: RegistroPontoFormData,
   ) => void | Promise<void>;
+}
+
+function getHojeISO(): string {
+  const agora = new Date();
+  const ano = agora.getFullYear();
+  const mes = String(agora.getMonth() + 1).padStart(2, "0");
+  const dia = String(agora.getDate()).padStart(2, "0");
+
+  return `${ano}-${mes}-${dia}`;
 }
 
 const valoresIniciais: RegistroPontoFormData = {
@@ -45,7 +55,7 @@ export function RegistroForm({
       funcionarioId:
         initialData?.funcionarioId ??
         valoresIniciais.funcionarioId,
-      data: initialData?.data ?? valoresIniciais.data,
+      data: initialData?.data ?? getHojeISO(),
       entrada1:
         initialData?.entrada1 ?? valoresIniciais.entrada1,
       saida1:
@@ -82,6 +92,20 @@ export function RegistroForm({
       return;
     }
 
+    const partesData = formData.data.split("-");
+    if (partesData.length === 3) {
+      const ano = Number(partesData[0]);
+
+      if (isNaN(ano) || ano < 2000 || ano > 2100) {
+        toast.warning("Data inválida", {
+          description:
+            "Informe uma data com ano válido (entre 2000 e 2100).",
+        });
+
+        return;
+      }
+    }
+
     try {
       setSalvando(true);
       await onSubmit(formData);
@@ -89,6 +113,7 @@ export function RegistroForm({
       setSalvando(false);
     }
   }
+
 
   return (
     <form
