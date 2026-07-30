@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Plus, SearchX, UserPlus } from "lucide-react";
 import { toast } from "sonner";
-import { SearchX, UserPlus } from "lucide-react";
 
 import { ActionMenu } from "@/components/common/ActionMenu";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
@@ -15,6 +14,7 @@ import { SearchInput } from "@/components/common/SearchInput";
 import { SectionCard } from "@/components/common/SectionCard";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PageSkeleton } from "@/components/common/PageSkeleton";
 
 import { useFuncionarios } from "@/hooks/useFuncionarios";
 import type { Funcionario } from "@/types/funcionario";
@@ -22,7 +22,13 @@ import type { Funcionario } from "@/types/funcionario";
 export default function FuncionariosPage() {
   const router = useRouter();
 
-  const { funcionarios, excluirFuncionario } = useFuncionarios();
+  const {
+    funcionarios,
+    loading,
+    error,
+    carregarFuncionarios,
+    excluirFuncionario,
+  } = useFuncionarios();
 
   const [search, setSearch] = useState("");
 
@@ -30,6 +36,10 @@ export default function FuncionariosPage() {
     useState<Funcionario | null>(null);
 
   const [excluindo, setExcluindo] = useState(false);
+
+  useEffect(() => {
+  void carregarFuncionarios();
+}, [carregarFuncionarios]);
 
   const funcionariosFiltrados = useMemo(() => {
     const termo = search.trim().toLowerCase();
@@ -141,6 +151,10 @@ export default function FuncionariosPage() {
     },
   ];
 
+  if (loading && funcionarios.length === 0) {
+    return <PageSkeleton />;
+  }
+
   return (
     <PageContainer>
       <PageHeader
@@ -156,6 +170,13 @@ export default function FuncionariosPage() {
           </Link>
         }
       />
+
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <p className="font-semibold">Erro ao obter lista de funcionários</p>
+          <p>{error}</p>
+        </div>
+      )}
 
       <SectionCard
         title="Lista de funcionários"

@@ -14,9 +14,12 @@ import {
   Settings,
   Users,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
-import { APP_NAME, EMPRESA_NOME, ROTAS } from "@/lib/constants";
+import { APP_NAME, ROTAS } from "@/lib/constants";
+import { useAuthContext } from "@/components/providers/AuthProvider";
+import { useConfiguracoesContext } from "@/components/providers/ConfiguracoesProvider";
 
 interface SidebarContentProps {
   onNavigate?: () => void;
@@ -75,6 +78,37 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
 
   const router = useRouter();
 
+  const { encerrarSessao } = useAuthContext();
+
+  const { configuracao } = useConfiguracoesContext();
+
+  function sair() {
+    encerrarSessao();
+    onNavigate?.();
+
+    toast.success("Sessão encerrada", {
+      description: "Você saiu do Chronos Ponto.",
+    });
+
+    setTimeout(() => {
+      router.replace("/login");
+    }, 100);
+  }
+
+const nomeEmpresa =
+  configuracao?.nomeEmpresa ?? "Supermercado Sandro";
+
+const nomeUsuario =
+  configuracao?.nomeUsuario ?? "Administrador";
+
+const iniciaisUsuario = nomeUsuario
+  .split(" ")
+  .filter(Boolean)
+  .slice(0, 2)
+  .map((parte) => parte[0])
+  .join("")
+  .toUpperCase();
+
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
 
@@ -97,7 +131,9 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
         <div className="min-w-0">
           <p className="truncate text-sm font-bold">{APP_NAME}</p>
 
-          <p className="truncate text-xs text-neutral-500">{EMPRESA_NOME}</p>
+          <p className="truncate text-xs text-neutral-500">
+  {nomeEmpresa}
+</p>
         </div>
       </div>
 
@@ -185,11 +221,13 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
       <div className="shrink-0 border-t border-white/10 p-4">
         <div className="mb-3 flex items-center gap-3 rounded-2xl bg-white/[0.04] p-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F5D000] text-sm font-bold text-black">
-            A
-          </div>
+  {iniciaisUsuario}
+</div>
 
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold">Admin</p>
+            <p className="truncate text-sm font-semibold">
+  {nomeUsuario}
+</p>
 
             <p className="truncate text-xs text-neutral-500">Administrador</p>
           </div>
@@ -210,7 +248,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
 
           <button
             type="button"
-            onClick={() => router.push("/login")}
+            onClick={sair}
             className="flex items-center justify-center gap-2 rounded-xl bg-white/[0.04] px-3 py-2 text-xs text-neutral-400 transition hover:bg-red-500/10 hover:text-red-400"
           >
             <LogOut className="h-4 w-4" />

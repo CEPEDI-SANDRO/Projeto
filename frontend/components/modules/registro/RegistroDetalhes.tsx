@@ -14,18 +14,24 @@ import {
   formatarMinutosParaHoras,
 } from "@/lib/formatters";
 
+import type { Funcionario } from "@/types/funcionario";
 import type { RegistroPonto } from "@/types/ponto";
 
 interface RegistroDetalhesProps {
   registro: RegistroPonto;
+  funcionarios?: Funcionario[];
+  funcionarioNome?: string;
 }
 
 export function RegistroDetalhes({
   registro,
+  funcionarios = funcionariosMock,
+  funcionarioNome,
 }: RegistroDetalhesProps) {
-  const funcionario = funcionariosMock.find(
+  const funcionarioEncontrado = funcionarios.find(
     (item) => item.id === registro.funcionarioId
   );
+  const nomeExibicao = funcionarioNome ?? funcionarioEncontrado?.nome ?? "Funcionário não encontrado";
 
   return (
     <div className="space-y-6">
@@ -38,7 +44,7 @@ export function RegistroDetalhes({
 
             <div className="min-w-0">
               <h3 className="truncate text-base font-semibold text-slate-950">
-                {funcionario?.nome ?? "Funcionário não encontrado"}
+                {nomeExibicao}
               </h3>
 
               <p className="text-sm text-slate-500">

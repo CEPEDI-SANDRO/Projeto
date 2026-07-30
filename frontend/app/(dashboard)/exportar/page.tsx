@@ -1,10 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Download,
   FileSpreadsheet,
-  FileText,
   UserRound,
   Users,
 } from "lucide-react";
@@ -16,34 +15,41 @@ import { SectionCard } from "@/components/common/SectionCard";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { DashboardMotion } from "@/components/modules/dashboard/DashboardMotion";
 
-import { funcionariosMock } from "@/mocks/funcionarios.mock";
+import { useFuncionarios } from "@/hooks/useFuncionarios";
+import { exportarRelatorioExcel } from "@/services/exportar.service";
 import { MESES } from "@/lib/constants";
 
 type TipoRelatorio = "geral" | "individual";
-type FormatoExportacao = "xlsx" | "csv";
 
 const DATA_ATUAL = new Date();
 const MES_ATUAL = DATA_ATUAL.getMonth() + 1;
 const ANO_ATUAL = DATA_ATUAL.getFullYear();
 
 export default function ExportarPage() {
+  const {
+    funcionarios,
+    carregarFuncionarios,
+    loading: carregandoFuncionarios,
+  } = useFuncionarios();
+
   const [tipoRelatorio, setTipoRelatorio] =
     useState<TipoRelatorio>("geral");
-
-  const [formato, setFormato] =
-    useState<FormatoExportacao>("xlsx");
 
   const [funcionarioId, setFuncionarioId] = useState(0);
   const [mes, setMes] = useState(MES_ATUAL);
   const [ano, setAno] = useState(ANO_ATUAL);
   const [exportando, setExportando] = useState(false);
 
+  useEffect(() => {
+    void carregarFuncionarios();
+  }, [carregarFuncionarios]);
+
   const funcionarioSelecionado = useMemo(
     () =>
-      funcionariosMock.find(
+      funcionarios.find(
         (funcionario) => funcionario.id === funcionarioId,
       ),
-    [funcionarioId],
+    [funcionarios, funcionarioId],
   );
 
   const podeExportar =
@@ -62,27 +68,39 @@ export default function ExportarPage() {
     try {
       setExportando(true);
 
-      await new Promise((resolve) =>
-        window.setTimeout(resolve, 800),
-      );
+      await exportarRelatorioExcel({
+        tipo: tipoRelatorio,
+        funcionarioId: funcionarioId || undefined,
+        mes,
+        ano,
+      });
 
       const nomeArquivo =
         tipoRelatorio === "geral"
-          ? `relatorio-geral-${ano}-${String(mes).padStart(2, "0")}.${formato}`
-          : `relatorio-${funcionarioSelecionado?.nome
-              .toLowerCase()
-              .replaceAll(" ", "-")}-${ano}-${String(mes).padStart(
+          ? `relatorio-geral-${ano}-${String(mes).padStart(
               2,
               "0",
-            )}.${formato}`;
+            )}.xlsx`
+          : `relatorio-${funcionarioSelecionado?.nome
+              ?.toLowerCase()
+              .normalize("NFD")
+              .replace(/[\u0300-\u036f]/g, "")
+              .replace(/[^a-z0-9]/g, "-")
+              .replace(/-+/g, "-")}-${ano}-${String(
+              mes,
+            ).padStart(2, "0")}.xlsx`;
 
       toast.success("Exportação concluída", {
         description: `${nomeArquivo} foi gerado com sucesso.`,
       });
-    } catch {
+    } catch (error) {
+      const mensagem =
+        error instanceof Error
+          ? error.message
+          : "Tente novamente em alguns instantes.";
+
       toast.error("Não foi possível exportar", {
-        description:
-          "Tente novamente em alguns instantes.",
+        description: mensagem,
       });
     } finally {
       setExportando(false);
@@ -102,7 +120,7 @@ export default function ExportarPage() {
         <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
           <SectionCard
             title="Configurações da exportação"
-            description="Escolha o relatório, o período e o formato desejado."
+            description="Escolha o relatório e o período desejado."
           >
             <div className="space-y-6">
               <section>
@@ -176,12 +194,15 @@ export default function ExportarPage() {
                       )
                     }
                     className={inputClass}
+                    disabled={carregandoFuncionarios}
                   >
                     <option value={0}>
-                      Selecione um funcionário
+                      {carregandoFuncionarios
+                        ? "Carregando funcionários..."
+                        : "Selecione um funcionário"}
                     </option>
 
-                    {funcionariosMock.map((funcionario) => (
+                    {funcionarios.map((funcionario) => (
                       <option
                         key={funcionario.id}
                         value={funcionario.id}
@@ -253,43 +274,20 @@ export default function ExportarPage() {
                   Formato do arquivo
                 </p>
 
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div className="mt-3 grid gap-3 sm:grid-cols-1">
                   <button
                     type="button"
-                    onClick={() => setFormato("xlsx")}
-                    className={cardOptionClass(
-                      formato === "xlsx",
-                    )}
+                    className={cardOptionClass(true)}
                   >
                     <FileSpreadsheet className="h-5 w-5 text-emerald-600" />
 
                     <div className="text-left">
                       <p className="text-sm font-semibold text-slate-900">
-                        Excel
+                        Excel (XLSX)
                       </p>
 
                       <p className="mt-1 text-xs text-slate-500">
                         Arquivo no formato XLSX.
-                      </p>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setFormato("csv")}
-                    className={cardOptionClass(
-                      formato === "csv",
-                    )}
-                  >
-                    <FileText className="h-5 w-5 text-sky-600" />
-
-                    <div className="text-left">
-                      <p className="text-sm font-semibold text-slate-900">
-                        CSV
-                      </p>
-
-                      <p className="mt-1 text-xs text-slate-500">
-                        Arquivo separado por vírgulas.
                       </p>
                     </div>
                   </button>
@@ -349,7 +347,7 @@ export default function ExportarPage() {
 
               <ResumoExportacao
                 label="Formato"
-                value={formato.toUpperCase()}
+                value="XLSX"
               />
 
               <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5">

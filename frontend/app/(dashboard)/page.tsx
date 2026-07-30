@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import {
   AlertTriangle,
   Clock,
@@ -8,6 +9,7 @@ import {
   UserX,
   Users,
 } from "lucide-react";
+import Link from "next/link";
 
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatCard } from "@/components/common/StatCard";
@@ -18,9 +20,18 @@ import { WeeklyHoursChart } from "@/components/modules/dashboard/WeeklyHoursChar
 import { useDashboard } from "@/hooks/useDashboard";
 import { formatarMinutosParaHoras } from "@/lib/formatters";
 import { DashboardMotion } from "@/components/modules/dashboard/DashboardMotion";
+import { PageSkeleton } from "@/components/common/PageSkeleton";
 
 export default function DashboardPage() {
-  const { dashboard } = useDashboard();
+  const { dashboard, loading, error, carregarDashboard } = useDashboard();
+
+  useEffect(() => {
+    carregarDashboard();
+  }, []);
+
+  if (loading && !dashboard.resumo.totalFuncionarios) {
+    return <PageSkeleton />;
+  }
 
   return (
     <div className="space-y-6">
@@ -30,6 +41,13 @@ export default function DashboardPage() {
           description="Visão geral do controle de ponto do Supermercado Sandro."
         />
       </DashboardMotion>
+
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <p className="font-semibold">Erro ao carregar dashboard</p>
+          <p>{error}</p>
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <DashboardMotion delay={0.05}>
@@ -126,12 +144,12 @@ export default function DashboardPage() {
             title="Pendências recentes"
             description="Registros incompletos ou parciais."
             action={
-              <button
-                type="button"
+              <Link
+                href="/registros?status=pendente"
                 className="text-xs font-semibold text-yellow-700 transition hover:text-yellow-800"
               >
                 Ver todas
-              </button>
+              </Link>
             }
           >
             <div className="space-y-3">

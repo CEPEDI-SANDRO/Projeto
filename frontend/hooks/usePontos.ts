@@ -1,81 +1,95 @@
 "use client";
 
-import { useState } from "react";
-
-import { pontosMock } from "@/mocks/pontos.mock";
-
+import { useState, useCallback } from "react";
+import type { RegistroPonto, RegistroPontoFormData } from "@/types/ponto";
 import {
-  atualizarPonto,
+  listarPontos,
   buscarPontoPorId,
-  criarPonto,
   listarPontosPorFuncionario,
   listarPontosPorMes,
+  criarPonto,
+  atualizarPonto,
   removerPonto,
 } from "@/services/pontos.service";
 
-import type {
-  RegistroPonto,
-  RegistroPontoFormData,
-} from "@/types/ponto";
-
 export function usePontos() {
-  const [pontos, setPontos] = useState<RegistroPonto[]>([
-    ...pontosMock,
-  ]);
+  const [pontos, setPontos] = useState<RegistroPonto[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [loading] = useState(false);
+  const carregarPontos = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-  function carregarPontos() {
-    setPontos([...pontosMock]);
-  }
+      const dados = await listarPontos();
+
+      setPontos(dados);
+    } catch (error) {
+      console.error("Erro ao carregar registros de ponto:", error);
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível carregar os registros.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   async function adicionarPonto(data: RegistroPontoFormData) {
-    const novo = await criarPonto(data);
-
-    setPontos((estadoAtual) => [
-      ...estadoAtual,
-      novo,
-    ]);
-
-    return novo;
+    setLoading(true);
+    try {
+      const novo = await criarPonto(data);
+      setPontos((prev) => [novo, ...prev]);
+      return novo;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   }
 
-  async function editarPonto(
-    id: number,
-    data: Partial<RegistroPontoFormData>,
-  ) {
-    const atualizado = await atualizarPonto(id, data);
-
-    if (!atualizado) {
-      return undefined;
+  async function editarPonto(id: number, data: Partial<RegistroPontoFormData>) {
+    setLoading(true);
+    try {
+      const atualizado = await atualizarPonto(id, data);
+      if (atualizado) {
+        setPontos((prev) =>
+          prev.map((ponto) => (ponto.id === id ? atualizado : ponto)),
+        );
+      }
+      return atualizado;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    } finally {
+      setLoading(false);
     }
-
-    setPontos((estadoAtual) =>
-      estadoAtual.map((ponto) =>
-        ponto.id === id ? atualizado : ponto,
-      ),
-    );
-
-    return atualizado;
   }
 
   async function excluirPonto(id: number) {
-    const removido = await removerPonto(id);
-
-    if (!removido) {
-      return false;
+    setLoading(true);
+    try {
+      const removido = await removerPonto(id);
+      if (removido) {
+        setPontos((prev) => prev.filter((ponto) => ponto.id !== id));
+      }
+      return removido;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    } finally {
+      setLoading(false);
     }
-
-    setPontos((estadoAtual) =>
-      estadoAtual.filter((ponto) => ponto.id !== id),
-    );
-
-    return true;
   }
 
   return {
     pontos,
     loading,
+    error,
     carregarPontos,
     buscarPontoPorId,
     listarPontosPorFuncionario,

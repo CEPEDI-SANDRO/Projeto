@@ -2,20 +2,18 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import {
-  Eye,
-  EyeOff,
-  LockKeyhole,
-  LogIn,
-  UserRound,
-} from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { Eye, EyeOff, LockKeyhole, LogIn, UserRound } from "lucide-react";
+import { useState, useEffect, type FormEvent } from "react";
 import { toast } from "sonner";
 
 import { ActionButton } from "@/components/common/ActionButton";
+import { realizarLogin } from "@/services/auth.service";
+import { useAuthContext } from "@/components/providers/AuthProvider";
 
 export default function LoginPage() {
   const router = useRouter();
+
+  const { registrarSessao, autenticado, carregando } = useAuthContext();
 
   const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
@@ -23,9 +21,13 @@ export default function LoginPage() {
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [entrando, setEntrando] = useState(false);
 
-  async function handleSubmit(
-    event: FormEvent<HTMLFormElement>,
-  ) {
+  useEffect(() => {
+    if (!carregando && autenticado) {
+      router.replace("/");
+    }
+  }, [autenticado, carregando, router]);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!usuario.trim() || !senha.trim()) {
@@ -39,21 +41,35 @@ export default function LoginPage() {
     try {
       setEntrando(true);
 
-      // Simulação temporária até a integração com o backend.
-      await new Promise((resolve) =>
-        window.setTimeout(resolve, 700),
-      );
-
-      toast.success("Login realizado", {
-        description: "Bem-vindo ao Chronos Ponto.",
+      const response = await realizarLogin({
+        usuario: usuario.trim(),
+        senha,
       });
 
-      void lembrar;
+      if (response.sucesso) {
+        // Armazena dados de autenticação e sessão no localStorage
+        registrarSessao(response.usuario, response.token);
 
-      router.push("/");
-    } catch {
+        if (lembrar) {
+          localStorage.setItem("chronos_remember_user", usuario.trim());
+        } else {
+          localStorage.removeItem("chronos_remember_user");
+        }
+
+        toast.success("Login realizado com sucesso", {
+          description: `Bem-vindo ao Chronos Ponto, ${response.usuario.nome}!`,
+        });
+
+        router.push("/");
+      }
+    } catch (error) {
+      const mensagem =
+        error instanceof Error
+          ? error.message
+          : "Confira as credenciais e tente novamente.";
+
       toast.error("Não foi possível entrar", {
-        description: "Confira os dados e tente novamente.",
+        description: mensagem,
       });
     } finally {
       setEntrando(false);
@@ -80,9 +96,7 @@ export default function LoginPage() {
 
           <div>
             <p className="text-lg font-bold">Chronos Ponto</p>
-            <p className="text-sm text-neutral-400">
-              Supermercado Sandro
-            </p>
+            <p className="text-sm text-neutral-400">Supermercado Sandro</p>
           </div>
         </div>
 
@@ -96,14 +110,14 @@ export default function LoginPage() {
           </h1>
 
           <p className="mt-5 max-w-lg text-base leading-7 text-neutral-400">
-            Acompanhe funcionários, registros, jornadas,
-            relatórios e exportações em uma única plataforma.
+            Acompanhe funcionários, registros, jornadas, relatórios e
+            exportações em uma única plataforma.
           </p>
         </div>
 
         <p className="relative z-10 text-xs text-neutral-500">
-          © {new Date().getFullYear()} Supermercado Sandro.
-          Todos os direitos reservados.
+          © {new Date().getFullYear()} Supermercado Sandro. Todos os direitos
+          reservados.
         </p>
       </section>
 
@@ -121,12 +135,8 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <p className="font-bold text-slate-950">
-                Chronos Ponto
-              </p>
-              <p className="text-xs text-slate-500">
-                Supermercado Sandro
-              </p>
+              <p className="font-bold text-slate-950">Chronos Ponto</p>
+              <p className="text-xs text-slate-500">Supermercado Sandro</p>
             </div>
           </div>
 
@@ -140,10 +150,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <form
-            className="mt-8 space-y-5"
-            onSubmit={handleSubmit}
-          >
+          <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
             <label className="block">
               <span className="text-sm font-medium text-slate-700">
                 Usuário
@@ -154,10 +161,8 @@ export default function LoginPage() {
 
                 <input
                   value={usuario}
-                  onChange={(event) =>
-                    setUsuario(event.target.value)
-                  }
-                  placeholder="Digite seu usuário"
+                  onChange={(event) => setUsuario(event.target.value)}
+                  placeholder="Digite seu usuário (ex: admin)"
                   autoComplete="username"
                   className={inputClass}
                 />
@@ -165,9 +170,7 @@ export default function LoginPage() {
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium text-slate-700">
-                Senha
-              </span>
+              <span className="text-sm font-medium text-slate-700">Senha</span>
 
               <div className="relative mt-1">
                 <LockKeyhole className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -175,9 +178,7 @@ export default function LoginPage() {
                 <input
                   type={mostrarSenha ? "text" : "password"}
                   value={senha}
-                  onChange={(event) =>
-                    setSenha(event.target.value)
-                  }
+                  onChange={(event) => setSenha(event.target.value)}
                   placeholder="Digite sua senha"
                   autoComplete="current-password"
                   className={`${inputClass} pr-11`}
@@ -185,15 +186,9 @@ export default function LoginPage() {
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setMostrarSenha((estado) => !estado)
-                  }
+                  onClick={() => setMostrarSenha((estado) => !estado)}
                   className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                  aria-label={
-                    mostrarSenha
-                      ? "Ocultar senha"
-                      : "Mostrar senha"
-                  }
+                  aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
                 >
                   {mostrarSenha ? (
                     <EyeOff className="h-4 w-4" />
@@ -209,15 +204,11 @@ export default function LoginPage() {
                 <input
                   type="checkbox"
                   checked={lembrar}
-                  onChange={(event) =>
-                    setLembrar(event.target.checked)
-                  }
+                  onChange={(event) => setLembrar(event.target.checked)}
                   className="h-4 w-4 rounded border-slate-300 accent-yellow-400"
                 />
 
-                <span className="text-sm text-slate-600">
-                  Lembrar de mim
-                </span>
+                <span className="text-sm text-slate-600">Lembrar de mim</span>
               </label>
 
               <button
@@ -225,7 +216,7 @@ export default function LoginPage() {
                 onClick={() =>
                   toast.info("Recuperação de senha", {
                     description:
-                      "Esta funcionalidade será ligada ao backend.",
+                      "Entre em contato com o suporte ou administrador do sistema.",
                   })
                 }
                 className="text-sm font-semibold text-yellow-700 transition hover:text-yellow-800"
@@ -234,11 +225,7 @@ export default function LoginPage() {
               </button>
             </div>
 
-            <ActionButton
-              type="submit"
-              disabled={entrando}
-              className="w-full"
-            >
+            <ActionButton type="submit" disabled={entrando} className="w-full">
               <LogIn className="h-4 w-4" />
 
               {entrando ? "Entrando..." : "Entrar"}
@@ -246,10 +233,22 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs leading-5 text-slate-500">
-              Nesta etapa, o acesso é apenas simulado. A
-              autenticação real será conectada posteriormente à
-              API Node.js/Express.
+            <p className="text-xs leading-5 text-slate-600">
+              <strong className="font-semibold text-slate-900">
+                Autenticação Integrada:
+              </strong>{" "}
+              O login é validado em tempo real pelo banco de dados SQLite do
+              backend.
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Usuário padrão:{" "}
+              <code className="rounded bg-slate-200 px-1 py-0.5 font-mono text-slate-800">
+                admin
+              </code>{" "}
+              | Senha:{" "}
+              <code className="rounded bg-slate-200 px-1 py-0.5 font-mono text-slate-800">
+                admin123
+              </code>
             </p>
           </div>
         </div>
